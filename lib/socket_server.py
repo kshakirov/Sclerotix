@@ -1,5 +1,6 @@
 import socket
 import lib.utils.utils as u
+import lib.parsing.http_parse_automaton as robot
 import asyncio
 
 global tasks
