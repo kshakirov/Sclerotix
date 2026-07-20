@@ -12,18 +12,11 @@ class State(Enum):
     EXPECT_CHUNK_CRLF=6
 
 class NetworkInput(Enum):
-    CHUNK_SIZE_GREATER_ZERO =1 
-    CHUNK_SIZE_ZERO=2
-    DATA_ARRIVED=3
-    MALFORMED=4
-    READING_FIXED_DATA=5
-    HEADERS_PARSED_EMPTY=6
-    HEADERS_PARSED_CONTENT_LENGTH=7
-    HEADERS_PARSED_CHUNKED=8
-    CHUNK_DATA_FLOW=10
-    CHUNK_DATA_EMPTY=11
-    CRLF_VALID=9
-    
+     CHUNK_SIZE_GREATER_ZERO =1 
+     CHUNK_SIZE_ZERO=2
+     DATA_ARRIVED=3
+     MALFORMED=4
+     READING_FIXED_DATA=5
 
 
 CONTENT_HEADER= "content-Length"
@@ -36,6 +29,19 @@ TRANSFER_ENCODING ="transfer-Encoding"
 def next_state(current_state, current_values, current_input):
     print(f" Transition{current_state, current_values, current_input}")
     match current_state:
+        case State.PARSE_HEADERS:
+            return State.EXPECT_CHUNK_SIZE
+        case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_ZERO:
+            print(f"NOTHING TO READ FROM HTT P BODY QUTTING ...")
+            return State.SUCCESS
+        case State.EXPECT_CHUNK_SIZE if current_input== NetworkInput.MALFORMED:
+            print("ERROR: JUNK")
+            return State.ERROR, None
+        case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_GREATER_ZERO:
+            return (State.READ_CHUNK_DATA, current_values, NetworkInput.READING_FIXED_DATA)
+        case State.READ_CHUNK_DATA  if current_values == 0 and  current_input == NetworkInput.READING_FIXED_DATA:
+            return 
+        
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
             print("First case")
