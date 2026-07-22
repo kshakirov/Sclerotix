@@ -107,11 +107,11 @@ def prep_headers(http_row_data):
     #content_legnth = (TRANSFER_ENCODING in headers, headers.get(CONTENT_HEADER))
     content_legnth = 0
     network_input, current_value = convert_row_http_to_state_input(content_legnth)
-    return network_input, current_value)
+    return (network_input, current_value)
 
 
-def parse_http_content(state, current_value, network_input):
-    
+def parse_http_content(state_tuple):
+    state, current_value, network_input = state_tuple
     for i in range(0,3):
         newstate, new_value, network_input =transition(state, current_value, network_input)
         print(f"newstate {newstate}, {new_value}")
