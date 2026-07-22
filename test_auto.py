@@ -21,4 +21,10 @@ r = p.convert_row_http_to_state_input(headers)
 print(r)
 
 input_1 = (p.State.PARSE_HEADERS, None,p.NetworkInput.HEADERS_PARSED_EMPTY)
+input_2 = (p.State.PARSE_HEADERS, 10 ,p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH)
+
 p.parse_http_content(input_1)
+
+p.parse_http_content(input_2)
+
+

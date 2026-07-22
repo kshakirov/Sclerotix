@@ -52,14 +52,15 @@ def convert_row_http_to_state_input(content_length_headers):
 
 # as Hal suggested the name is
 def transition(current_state, current_values, current_input):
-    print(current_state, current_values, current_input)
+    print(f" Transition{current_state, current_values, current_input}")
     match current_state:
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
             print("First case")
             return State.SUCCESS, None, None
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CONTENT_LENGTH:
-            return State.READ_CHUNK_DATA, current_values, NetworkInput.READING_FIXED_DATA
+            print("Second case")
+            return (State.READ_CHUNK_DATA, current_values, NetworkInput.READING_FIXED_DATA)
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
             return State.EXPECT_CHUNK_SIZE, current_values, NetworkInput.CHUNK_DATA_FLOW
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_ZERO:
@@ -70,6 +71,7 @@ def transition(current_state, current_values, current_input):
             return State.READ_CHUNK_DATA, current_values, NetworkInput.CHUNK_DATA_FLOW
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values > 0 :
+            print("Third Case")
             return State.READ_CHUNK_DATA, current_values, current_input
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values ==0 :
             return State.SUCCESS,None,None
@@ -84,6 +86,9 @@ def transition(current_state, current_values, current_input):
             return State.EXPECT_CHUNK_SIZE,None,None
         case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.MALFORMED:
             return State.ERROR,None,None
+        case _ :
+            print("Failed to finde")
+            return None,None,None
         
         
         
@@ -111,9 +116,9 @@ def prep_headers(http_row_data):
 
 
 def parse_http_content(state_tuple):
-    state, current_value, network_input = state_tuple
+    newstate, current_value, network_input = state_tuple
     for i in range(0,3):
-        newstate, new_value, network_input =transition(state, current_value, network_input)
+        newstate, new_value, network_input =transition(newstate, current_value, network_input)
         print(f"newstate {newstate}, {new_value}")
         match newstate:
             case State.SUCCESS :
