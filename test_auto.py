@@ -20,5 +20,5 @@ r = p.convert_row_http_to_state_input(headers)
 
 print(r)
 
-
+input_1 = (p.State.PARSE_HEADERS, None,p.NetworkInput.HEADERS_PARSED_EMPTY)
 p.parse_http_content(headers)

@@ -96,16 +96,17 @@ def parse_headers(http_row_data):
     #normalize header names
     return http_row_data
         
-
-def parse_http_content(http_row_data):
+def prep_headers(http_row_data):
     state = State.PARSE_HEADERS
     headers = parse_headers(http_row_data) # прошлись по заголовкам собрали их
     #content_legnth = (TRANSFER_ENCODING in headers, headers.get(CONTENT_HEADER))
     content_legnth = 0
-        # получили кортеж из двух взаимоисключающих загловков
-    #создаем начальный сигнал и начальное значение если оно есть
     network_input, current_value = convert_row_http_to_state_input(content_legnth)
-    print(network_input, current_value)
+    return network_input, current_value)
+
+
+def parse_http_content(state, current_value, network_input):
+    
     for i in range(0,3):
         newstate, new_value, network_input =transition(state, current_value, network_input)
         print(f"newstate {newstate}, {new_value}")
