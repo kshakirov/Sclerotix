@@ -112,12 +112,12 @@ def prep_headers(http_row_data):
 
 
 def parse_http_content(state_tuple):
-    newstate, current_value, network_input = state_tuple
+    state, value, i_nput = state_tuple
     counter = 0
     while  counter < 10:
           counter +=1 # времено
           #for i in range(0,10):
-          newstate, new_value, network_input =transition(newstate, current_value, network_input)
+          newstate, new_value, network_input =transition(state, value, i_nput)
           print(f"newstate {newstate}, {new_value}")
           match newstate:
               case State.SUCCESS :
@@ -134,8 +134,9 @@ def parse_http_content(state_tuple):
               case State.EXPECT_CHUNK_CRLF:
                   pass
               case _:
-                  print("Nothing found running again")
-                  transition
+                  print("Nothing found running again value is {}".format(new_value))
+                  state,value, i_nput = newstate,new_value, network_input
+                  
     return
 
 def read_bytes_from_content(current_value):
