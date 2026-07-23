@@ -12,18 +12,18 @@ class State(Enum):
     EXPECT_CHUNK_CRLF=6
 
 class NetworkInput(Enum):
-     CHUNK_SIZE_GREATER_ZERO =1 
-     CHUNK_SIZE_ZERO=2
-     DATA_ARRIVED=3
-     MALFORMED=4
-     READING_FIXED_DATA=5
-     HEADERS_PARSED_EMPTY=6
-     HEADERS_PARSED_CONTENT_LENGTH=7
-     HEADERS_PARSED_CHUNKED=8
-     CHUNK_DATA_FLOW=10
-     CHUNK_DATA_EMPTY=11
-     CRLF_VALID=9
-     
+    CHUNK_SIZE_GREATER_ZERO =1 
+    CHUNK_SIZE_ZERO=2
+    DATA_ARRIVED=3
+    MALFORMED=4
+    READING_FIXED_DATA=5
+    HEADERS_PARSED_EMPTY=6
+    HEADERS_PARSED_CONTENT_LENGTH=7
+    HEADERS_PARSED_CHUNKED=8
+    CHUNK_DATA_FLOW=10
+    CHUNK_DATA_EMPTY=11
+    CRLF_VALID=9
+    
 
 
 CONTENT_HEADER= "content-Length"
@@ -72,7 +72,8 @@ def transition(current_state, current_values, current_input):
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values > 0 :
             print("Third Case")
-            return State.READ_CHUNK_DATA, current_values, current_input
+            values = read_bytes_from_content(current_values)
+            return State.READ_CHUNK_DATA, values, current_input
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values ==0 :
             return State.SUCCESS,None,None
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values > 0 :
@@ -96,16 +97,10 @@ def transition(current_state, current_values, current_input):
         
         
 
-        case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
-            return State.EXPECT_CHUNK_CRLF, None,in_put
-        case State.EXPECT_CHUNK_CRLF if current_input == NetworkInput.CRLF_VALID:
-            return State.EXPECT_CHUNK_SIZE,None,None
-        case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.MALFORMED:
-            return State.ERROR,None,None
-        case _ :
-            print("Failed to find")
-            return None,None,None
-        
+def parse_headers(http_row_data):
+    #normalize header names
+    return http_row_data
+
 def prep_headers(http_row_data):
     state = State.PARSE_HEADERS
     headers = parse_headers(http_row_data) # прошлись по заголовкам собрали их
@@ -117,21 +112,33 @@ def prep_headers(http_row_data):
 
 def parse_http_content(state_tuple):
     newstate, current_value, network_input = state_tuple
-    for i in range(0,3):
-        newstate, new_value, network_input =transition(newstate, current_value, network_input)
-        print(f"newstate {newstate}, {new_value}")
-        match newstate:
-            case State.SUCCESS :
-                print("SUCCESS, finishing ...")
-                break #do someting 
-            case State.ERROR:
-                #do something
-                break
-            case State.EXPECT_CHUNK_SIZE:
-                pass
-                # here we listen to socket for receiveng and reading headers
-                # далее пакуему новое состояние с
-            case State.EXPECT_CHUNK_CRLF:
-                pass
+    counter = 0
+    while  counter < 10:
+          counter +=1 # времено
+          #for i in range(0,10):
+          newstate, new_value, network_input =transition(newstate, current_value, network_input)
+          print(f"newstate {newstate}, {new_value}")
+          match newstate:
+              case State.SUCCESS :
+                  print("SUCCESS, finishing ...")
+                  break #do someting 
+              case State.ERROR:
+                  #do something
+                  print("ERROR")
+                  break
+              case State.EXPECT_CHUNK_SIZE:
+                  pass
+            # here we listen to socket for receiveng and reading headers
+            # далее пакуему новое состояние с
+              case State.EXPECT_CHUNK_CRLF:
+                  pass
+              case _:
+                  print("Nothing found running again")
+                  transition
     return
 
+def read_bytes_from_content(current_value):
+    #пока эмуллирует чтение затем добавим реальные
+    # специально подробно расписываю
+    new_value = current_value - 1
+    return new_value
