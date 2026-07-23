@@ -63,8 +63,11 @@ def transition(current_state, current_values, current_input):
             print("Second case")
             return (State.READ_CHUNK_DATA, current_values, NetworkInput.READING_FIXED_DATA)
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
-            return State.EXPECT_CHUNK_SIZE, current_values, NetworkInput.CHUNK_DATA_FLOW
+            print("Expecting chunk size state")
+            size, i_nput = expect_chunk_size()
+            return State.EXPECT_CHUNK_SIZE, size, i_nput
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_ZERO:
+            print("Nothing to read chunk size is zero")
             return State.SUCCESS, None, None
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.MALFORMED:
             return State.ERROR,None,None
@@ -114,7 +117,7 @@ def prep_headers(http_row_data):
 def parse_http_content(state_tuple):
     state, value, i_nput = state_tuple
     counter = 0
-    while  counter < 10:
+    while  counter < 15:
           counter +=1 # времено
           #for i in range(0,10):
           newstate, new_value, network_input =transition(state, value, i_nput)
@@ -127,8 +130,8 @@ def parse_http_content(state_tuple):
                   #do something
                   print("ERROR")
                   break
-              case State.EXPECT_CHUNK_SIZE:
-                  pass
+             # case State.EXPECT_CHUNK_SIZE:
+             #     pass
             # here we listen to socket for receiveng and reading headers
             # далее пакуему новое состояние с
               case State.EXPECT_CHUNK_CRLF:
@@ -140,7 +143,14 @@ def parse_http_content(state_tuple):
     return
 
 def read_bytes_from_content(current_value):
-    #пока эмуллирует чтение затем добавим реальные
-    # специально подробно расписываю
-    new_value = current_value - 1
-    return new_value
+    if(current_value > 0):
+        #пока эмуллирует чтение затем добавим реальные
+        # специально подробно расписываю
+        new_value = current_value - 1
+        return new_value
+    else:
+        return current_value
+
+def expect_chunk_size():
+    #здесь мы читаем данные из сети и ищем  16 ричную строку
+    return  0, NetworkInput.CHUNK_SIZE_ZERO
