@@ -82,7 +82,9 @@ def transition(current_state, current_values, current_input):
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values ==0 :
             return State.SUCCESS,None,None
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values > 0 :
-            return State.READ_CHUNK_DATA, current_values, current_input
+            print("Reading chunks")
+            value = read_chunk_data(current_values)
+            return State.READ_CHUNK_DATA, value, current_input
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values == 0 :
             return State.EXPECT_CHUNK_CRLF, current_values, NetworkInput.CHUNK_DATA_EMPTY
 
@@ -154,7 +156,11 @@ def read_bytes_from_content(current_value):
 
 def from_parse_chunk_to_expect_chunk_size():
     #здесь мы читаем данные из сети и ищем  16 ричную строку
-    if(True):
+    if(False):
         return  0, NetworkInput.CHUNK_SIZE_ZERO
     else:
-        return 0, NetworkInput.CHUNK_SIZE_GREATER_ZERO
+        return 10, NetworkInput.CHUNK_SIZE_GREATER_ZERO
+
+def read_chunk_data(value):
+    print(f"emulating readin chunk data: read {value} cut out one byte" )
+    return value - 1
