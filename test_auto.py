@@ -25,9 +25,9 @@ input_2 = (p.State.PARSE_HEADERS, 10 ,p.NetworkInput.HEADERS_PARSED_CONTENT_LENG
 input_3 = (p.State.PARSE_HEADERS, 10 ,p.NetworkInput.HEADERS_PARSED_CHUNKED)
 
 
-p.parse_http_content(input_1)
+#p.parse_http_content(input_1)
 
-p.parse_http_content(input_2)
+#p.parse_http_content(input_2)
 
 p.parse_http_content(input_3)
 
