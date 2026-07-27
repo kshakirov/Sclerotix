@@ -82,14 +82,18 @@ def transition(current_state, current_values, current_input):
             return State.SUCCESS,None,None
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values > 0 :
             print("Reading chunks")
-            value = read_chunk_data(current_values)
-            return State.READ_CHUNK_DATA, value, current_input
+            value, in_put = read_chunk_data(current_values)
+            return State.READ_CHUNK_DATA, value, in_put
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values == 0 :
+#            value, in_put = read_chunk_data(current_values)
+            print("All data in chunk is read wating for CHUNK CRLF")
+            in_put = expect_chunk_crlf()
+
+            print("transition to Expect Chunk CRLF from 0 chunks left")
             return State.EXPECT_CHUNK_CRLF, current_values, NetworkInput.CHUNK_DATA_EMPTY
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
-            print("All data in chunk is read wating for CHUNK CRLF")
-            return State.EXPECT_CHUNK_CRLF, None,None
+            return State.EXPECT_CHUNK_CRLF, None,in_put
         case State.EXPECT_CHUNK_CRLF if current_input == NetworkInput.CRLF_VALID:
             return State.EXPECT_CHUNK_SIZE,None,None
         case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.MALFORMED:
@@ -164,6 +168,11 @@ def from_parse_chunk_to_expect_chunk_size():
 def read_chunk_data(value):
     print(f"emulating readin chunk data: read {value} cut out one byte" )
     if(value > 0):
-        return value - 1
+        return value - 1, NetworkInput.CHUNK_DATA_FLOW
     else:
+        print("Now all chunks are read goint to Data empty")
         return 0, NetworkInput.CHUNK_DATA_EMPTY
+
+def expect_chunk_crlf():
+    print(f"emulating valid crlf to be received")
+    return NetworkInput.CRLF_VALID
