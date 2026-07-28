@@ -33,8 +33,8 @@ TRANSFER_ENCODING ="transfer-Encoding"
 
 
 # as это чистый автомат  и функция который просто отмечает стадии чтения  ему на вход должны идти только состояние и входящий сигнал
-def next_state(current_state, current_input, current_value):
-    print(f" Transition{current_state, current_input, current_value}")
+def next_state(current_state, current_input, current_values):
+    print(f" Transition{current_state, current_input, current_values}")
     match current_state:
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
@@ -42,7 +42,7 @@ def next_state(current_state, current_input, current_value):
             return State.SUCCESS, None
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CONTENT_LENGTH:
             print("Second case")
-            return (State.READ_CHUNK_DATA,  NetworkInput.READING_FIXED_DATA, current_value)
+            return (State.READ_CHUNK_DATA,  NetworkInput.READING_FIXED_DATA, current_values)
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
             print("Expecting chunk size state")
             size, i_nput = from_parse_chunk_to_expect_chunk_size()
@@ -59,7 +59,7 @@ def next_state(current_state, current_input, current_value):
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values > 0 :
             print("Third Case")
             #values = read_bytes_from_content(current_values)
-            return State.READ_CHUNK_DATA, values, current_input
+            return State.READ_CHUNK_DATA, current_input, current_values
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values ==0 :
             print("0 bytes")
             return State.SUCCESS,None,None
@@ -82,7 +82,7 @@ def next_state(current_state, current_input, current_value):
         case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.MALFORMED:
             return State.ERROR,None,None
         case _ :
-            print("Failed to finde")
+            print("Failed to find")
             return None,None,None
         
         
@@ -93,12 +93,12 @@ def run_engine(state_tuple):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
     state,  in_put, in_value = state_tuple
     counter = 0
-    while  counter < 15:
+    while  counter < 8:
         counter +=1 # времено
         #for i in range(0,10):
-        newstate,  network_input, in_value =next_state(state, in_put, in_value)
+
         print(f"Entering: State {state},  {in_put}, {in_value}")
-        match newstate:
+        match state:
 
             case State.SUCCESS :
                 print("SUCCESS, finishing ...")
@@ -114,18 +114,21 @@ def run_engine(state_tuple):
             
             case State.EXPECT_CHUNK_CRLF:
                 pass
-            case State.READ_CHUNK_DATA if network_input == NetworkInput.READING_FIXED_DATA:
+            case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
                 bytes_left_to_read = read_chunk_fixed_length(in_value)
-                newstate = State.READ_CHUNK_DATA
-                network_input = NetworkInput
+                state = State.READ_CHUNK_DATA
+                in_put = NetworkInput.READING_FIXED_DATA
                 in_value = bytes_left_to_read
+                
                 
                 pass
             case _:
-                print("Nothing found running again state is {} network i s {} quitting ...".format(newstate, network_input))
-                break
+                print("Nothing found running again state is {} network i s {} quitting ...".format(state, in_put))
+                
+
               #                  state,value, i_nput = newstate,new_value, network_input
+        state,  in_put, in_value =next_state(state, in_put, in_value)
 
                   
     return
