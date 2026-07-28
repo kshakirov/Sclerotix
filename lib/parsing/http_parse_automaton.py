@@ -52,7 +52,7 @@ def convert_row_http_to_state_input(content_length_headers):
 
 
 # as Hal suggested the name is
-def next(current_state, current_values, current_input):
+def next_state(current_state, current_values, current_input):
     print(f" Transition{current_state, current_values, current_input}")
     match current_state:
 
@@ -128,7 +128,7 @@ def run_engine(state_tuple):
     while  counter < 15:
           counter +=1 # времено
           #for i in range(0,10):
-          newstate, new_value, network_input =next(state, value, i_nput)
+          newstate, new_value, network_input =next_state(state, value, i_nput)
           print(f"newstate {newstate}, {new_value}")
           match newstate:
               case State.SUCCESS :
