@@ -33,13 +33,13 @@ TRANSFER_ENCODING ="transfer-Encoding"
 
 
 # as это чистый автомат  и функция который просто отмечает стадии чтения  ему на вход должны идти только состояние и входящий сигнал
-def next_state(current_state, current_values, current_input):
-    print(f" Transition{current_state, current_values, current_input}")
+def next_state(current_state, current_input):
+    print(f" Transition{current_state, current_input}")
     match current_state:
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
             print("First case")
-            return State.SUCCESS, None, None
+            return State.SUCCESS, None
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CONTENT_LENGTH:
             print("Second case")
             return (State.READ_CHUNK_DATA, current_values, NetworkInput.READING_FIXED_DATA)
@@ -87,16 +87,18 @@ def next_state(current_state, current_values, current_input):
         
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
 #потоуму что он запускается только с сигналом чтение заголовков 
-
+# но пока временно для тестирования у буду передавть сюда состояиния
 def run_engine(state_tuple):
-    state, value, i_nput = state_tuple
+#    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
+    state, value, in_put = state_tuple
     counter = 0
     while  counter < 15:
           counter +=1 # времено
           #for i in range(0,10):
-          newstate, new_value, network_input =next_state(state, value, i_nput)
-          print(f"newstate {newstate}, {new_value}")
+          newstate,  network_input =next_state(state, in_put)
+          print(f"Entering: State {state}, {value}, {in_put}")
           match newstate:
+
               case State.SUCCESS :
                   print("SUCCESS, finishing ...")
                   break #do someting 
