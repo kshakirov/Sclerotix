@@ -1,4 +1,4 @@
-import random
+
 
 
 from enum import Enum
@@ -33,8 +33,8 @@ TRANSFER_ENCODING ="transfer-Encoding"
 
 
 # as это чистый автомат  и функция который просто отмечает стадии чтения  ему на вход должны идти только состояние и входящий сигнал
-def next_state(current_state, current_input):
-    print(f" Transition{current_state, current_input}")
+def next_state(current_state, current_input, current_value):
+    print(f" Transition{current_state, current_input, current_value}")
     match current_state:
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
@@ -42,7 +42,7 @@ def next_state(current_state, current_input):
             return State.SUCCESS, None
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CONTENT_LENGTH:
             print("Second case")
-            return (State.READ_CHUNK_DATA, current_values, NetworkInput.READING_FIXED_DATA)
+            return (State.READ_CHUNK_DATA,  NetworkInput.READING_FIXED_DATA, current_value)
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
             print("Expecting chunk size state")
             size, i_nput = from_parse_chunk_to_expect_chunk_size()
@@ -67,7 +67,7 @@ def next_state(current_state, current_input):
             value, in_put = read_chunk_data(current_values)
             return State.READ_CHUNK_DATA, value, in_put
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values == 0 :
-#            value, in_put = read_chunk_data(current_values)
+            #            value, in_put = read_chunk_data(current_values)
             print("All data in chunk is read wating for CHUNK CRLF")
             in_put = expect_chunk_crlf()
 
@@ -89,34 +89,57 @@ def next_state(current_state, current_input):
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
 def run_engine(state_tuple):
-#    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
-    state, value, in_put = state_tuple
+    #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
+    state,  in_put, in_value = state_tuple
     counter = 0
     while  counter < 15:
-          counter +=1 # времено
-          #for i in range(0,10):
-          newstate,  network_input =next_state(state, in_put)
-          print(f"Entering: State {state}, {value}, {in_put}")
-          match newstate:
+        counter +=1 # времено
+        #for i in range(0,10):
+        newstate,  network_input, in_value =next_state(state, in_put, in_value)
+        print(f"Entering: State {state},  {in_put}, {in_value}")
+        match newstate:
 
-              case State.SUCCESS :
-                  print("SUCCESS, finishing ...")
-                  break #do someting 
-              case State.ERROR:
-                  #do something
-                  print("ERROR")
-                  break
-             # case State.EXPECT_CHUNK_SIZE:
-             #     pass
+            case State.SUCCESS :
+                print("SUCCESS, finishing ...")
+                break #do someting 
+            case State.ERROR:
+                #do something
+                print("ERROR")
+                break
+            # case State.EXPECT_CHUNK_SIZE:
+            #     pass
             # here we listen to socket for receiveng and reading headers
             # далее пакуему новое состояние с
-              case State.EXPECT_CHUNK_CRLF:
-                  pass
-              case _:
-                  print("Nothing found running again value is {}".format(new_value))
-                  state,value, i_nput = newstate,new_value, network_input
+            
+            case State.EXPECT_CHUNK_CRLF:
+                pass
+            case State.READ_CHUNK_DATA if network_input == NetworkInput.READING_FIXED_DATA:
+                print("run_engine: Reading chunks of fixed length")
+                bytes_left_to_read = read_chunk_fixed_length(in_value)
+                newstate = State.READ_CHUNK_DATA
+                network_input = NetworkInput
+                in_value = bytes_left_to_read
+                
+                pass
+            case _:
+                print("Nothing found running again state is {} network i s {} quitting ...".format(newstate, network_input))
+                break
+              #                  state,value, i_nput = newstate,new_value, network_input
+
                   
     return
+
+
+def read_chunk_fixed_length(current_value):
+    print(current_value)
+    if(current_value > 0):
+        #пока эмуллирует чтение затем добавим реальные
+        # специально подробно расписываю
+        new_value = current_value - 1
+        return new_value
+    else:
+        return current_value
+
 
 def read_bytes_from_content(current_value):
     if(current_value > 0):
@@ -148,7 +171,7 @@ def expect_chunk_crlf():
 
 
 
-def parse_headers(http_row_data):
+def parseae_headers(http_row_data):
     #normalize header names
     return http_row_data
 

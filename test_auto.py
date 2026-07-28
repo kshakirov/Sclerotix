@@ -20,14 +20,14 @@ r = p.convert_row_http_to_state_input(headers)
 
 print(r)
 
-input_1 = (p.State.PARSE_HEADERS, None,p.NetworkInput.HEADERS_PARSED_EMPTY)
-#input_2 = (p.State.PARSE_HEADERS, 10 ,p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH)
-#input_3 = (p.State.PARSE_HEADERS, 10 ,p.NetworkInput.HEADERS_PARSED_CHUNKED)
+input_1 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_EMPTY, None)
+input_2 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, 10)
+input_3 = (p.State.PARSE_HEADERS, 10 ,p.NetworkInput.HEADERS_PARSED_CHUNKED)
 
 
 #p.parse_http_content(input_1)
 
 #p.parse_http_content(input_2)
 
-p.run_engine(input_1)
+p.run_engine(input_2)
 
