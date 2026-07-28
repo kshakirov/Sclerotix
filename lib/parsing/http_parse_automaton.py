@@ -58,9 +58,10 @@ def next_state(current_state, current_input, current_value):
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values > 0 :
             print("Third Case")
-            values = read_bytes_from_content(current_values)
+            #values = read_bytes_from_content(current_values)
             return State.READ_CHUNK_DATA, values, current_input
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values ==0 :
+            print("0 bytes")
             return State.SUCCESS,None,None
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values > 0 :
             print("Reading chunks")
