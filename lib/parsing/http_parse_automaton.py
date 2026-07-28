@@ -51,7 +51,7 @@ def convert_row_http_to_state_input(content_length_headers):
 
 
 # as Hal suggested the name is
-def transition(current_state, current_values, current_input):
+def next(current_state, current_values, current_input):
     print(f" Transition{current_state, current_values, current_input}")
     match current_state:
 
@@ -121,13 +121,13 @@ def prep_headers(http_row_data):
     return (network_input, current_value)
 
 
-def parse_http_content(state_tuple):
+def run_engine(state_tuple):
     state, value, i_nput = state_tuple
     counter = 0
     while  counter < 15:
           counter +=1 # времено
           #for i in range(0,10):
-          newstate, new_value, network_input =transition(state, value, i_nput)
+          newstate, new_value, network_input =next(state, value, i_nput)
           print(f"newstate {newstate}, {new_value}")
           match newstate:
               case State.SUCCESS :
