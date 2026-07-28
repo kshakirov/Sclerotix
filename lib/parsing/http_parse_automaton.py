@@ -32,25 +32,7 @@ TRANSFER_ENCODING ="transfer-Encoding"
 
 
 
-
-def convert_row_http_to_state_input(content_length_headers):
-    print("convert")
-    print(content_length_headers)
-    
-    match content_length_headers:
-        case (True, None):
-            return (TRANSFER_ENCODING, 0)
-        case (True, c) if c > 0:
-            return TRANSFER_ENCODING, c
-        case (None, 0):
-            return CONTENT_HEADER, 0
-        case (None, c)  if c > 0:
-            return CONTENT_HEADER, c
-        case _ :
-            return (NetworkInput.HEADERS_PARSED_EMPTY, None)
-
-
-# as Hal suggested the name is
+# as это чистый автомат  и функция который просто отмечает стадии чтения  ему на вход должны идти только состояние и входящий сигнал
 def next_state(current_state, current_values, current_input):
     print(f" Transition{current_state, current_values, current_input}")
     match current_state:
@@ -103,23 +85,8 @@ def next_state(current_state, current_values, current_input):
             return None,None,None
         
         
-        
-        
-        
-        
-
-def parse_headers(http_row_data):
-    #normalize header names
-    return http_row_data
-
-def prep_headers(http_row_data):
-    state = State.PARSE_HEADERS
-    headers = parse_headers(http_row_data) # прошлись по заголовкам собрали их
-    #content_legnth = (TRANSFER_ENCODING in headers, headers.get(CONTENT_HEADER))
-    content_legnth = 0
-    network_input, current_value = convert_row_http_to_state_input(content_legnth)
-    return (network_input, current_value)
-
+# это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
+#потоуму что он запускается только с сигналом чтение заголовков 
 
 def run_engine(state_tuple):
     state, value, i_nput = state_tuple
@@ -176,3 +143,35 @@ def read_chunk_data(value):
 def expect_chunk_crlf():
     print(f"emulating valid crlf to be received")
     return NetworkInput.CRLF_VALID
+
+
+
+def parse_headers(http_row_data):
+    #normalize header names
+    return http_row_data
+
+def prep_headers(http_row_data):
+    state = State.PARSE_HEADERS
+    headers = parse_headers(http_row_data) # прошлись по заголовкам собрали их
+    #content_legnth = (TRANSFER_ENCODING in headers, headers.get(CONTENT_HEADER))
+    content_legnth = 0
+    network_input, current_value = convert_row_http_to_state_input(content_legnth)
+    return (network_input, current_value)
+
+
+def convert_row_http_to_state_input(content_length_headers):
+    print("convert")
+    print(content_length_headers)
+    
+    match content_length_headers:
+        case (True, None):
+            return (TRANSFER_ENCODING, 0)
+        case (True, c) if c > 0:
+            return TRANSFER_ENCODING, c
+        case (None, 0):
+            return CONTENT_HEADER, 0
+        case (None, c)  if c > 0:
+            return CONTENT_HEADER, c
+        case _ :
+            return (NetworkInput.HEADERS_PARSED_EMPTY, None)
+
