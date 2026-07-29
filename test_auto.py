@@ -13,12 +13,12 @@ post_chunked_fragmented = [
     b"0\r\n\r\n"
 ]
 
-headers = u.parse_http_req(test_http_data)
-print(headers)
-print("---")
-r = p.convert_row_http_to_state_input(headers)
+#headers = u.parse_http_req(test_http_data)
+#print(headers)
+#print("---")
+#r = p.convert_row_http_to_state_input(headers)
 
-print(r)
+#print(r)
 
 input_1 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_EMPTY, None)
 input_2 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, 4)
