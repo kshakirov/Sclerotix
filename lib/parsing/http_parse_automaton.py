@@ -118,6 +118,7 @@ def run_engine(state_tuple):
                 in_value = read_chunk_variable_length(in_value)
                 pass
             case State.EXPECT_CHUNK_CRLF:
+                print(f"run_engine: state  is EXPECT CHUNK CRLF: in_put is {in_put} in_value is {in_value} ")
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
