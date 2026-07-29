@@ -34,7 +34,7 @@ TRANSFER_ENCODING ="transfer-Encoding"
 
 # as это чистый автомат  и функция который просто отмечает стадии чтения  ему на вход должны идти только состояние и входящий сигнал
 def next_state(current_state, current_input, current_values):
-    print(f" Transition{current_state, current_input, current_values}")
+    print(f"\tnext_state:  current tuple: {current_state, current_input, current_values}")
     match current_state:
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
@@ -44,11 +44,10 @@ def next_state(current_state, current_input, current_values):
             print("Second case")
             return (State.READ_CHUNK_DATA,  NetworkInput.READING_FIXED_DATA, current_values)
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
-            print("Expecting chunk size state")
-            size, i_nput = from_parse_chunk_to_expect_chunk_size()
-            return State.EXPECT_CHUNK_SIZE, size, i_nput
+            print("\tnext_state: transition to Expecting Chunk Size state")
+            return State.EXPECT_CHUNK_SIZE, current_input, current_values
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_ZERO:
-            print("Nothing to read chunk size is zero")
+            print("\tnext_state: Nothing to read chunk size is zero")
             return State.SUCCESS, None, None
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.MALFORMED:
             return State.ERROR,None,None
@@ -97,7 +96,7 @@ def run_engine(state_tuple):
         counter +=1 # времено
         #for i in range(0,10):
 
-        print(f"Entering: State {state},  {in_put}, {in_value}")
+        print(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
 
             case State.SUCCESS :
@@ -111,7 +110,10 @@ def run_engine(state_tuple):
             #     pass
             # here we listen to socket for receiveng and reading headers
             # далее пакуему новое состояние с
-            
+            case State.EXPECT_CHUNK_SIZE :
+                print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
+                in_put = read_chunk_size()
+                
             case State.EXPECT_CHUNK_CRLF:
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
@@ -124,7 +126,7 @@ def run_engine(state_tuple):
                 
                 pass
             case _:
-                print("Nothing found running again state is {} network i s {} quitting ...".format(state, in_put))
+                print("run_engine: state is Default  Nothing Found,  running again state is {} network is {} looping  ...".format(state, in_put))
                 
 
               #                  state,value, i_nput = newstate,new_value, network_input
@@ -135,7 +137,7 @@ def run_engine(state_tuple):
 
 
 def read_chunk_fixed_length(current_value):
-    print(current_value)
+    print(f"\t\tread_chunk_fixed_length in_value is {current_value}")
     if(current_value > 0):
         #пока эмуллирует чтение затем добавим реальные
         # специально подробно расписываю
@@ -144,6 +146,10 @@ def read_chunk_fixed_length(current_value):
     else:
         return current_value
 
+def read_chunk_size():
+    #emulating zero
+    print(f"\t\tread_chunk_size: chunk size is empty ")
+    return NetworkInput.CHUNK_SIZE_ZERO
 
 def read_bytes_from_content(current_value):
     if(current_value > 0):
