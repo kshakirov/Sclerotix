@@ -52,8 +52,8 @@ def next_state(current_state, current_input, current_values):
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.MALFORMED:
             return State.ERROR,None,None
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_GREATER_ZERO:
-            print("from Expect Chunk Size to Chunk Size Greated Zero")
-            return State.READ_CHUNK_DATA, current_values, NetworkInput.CHUNK_DATA_FLOW
+            print("\tnext_state: tansition to Read Chunk Data ")
+            return State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW, current_values
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.READING_FIXED_DATA and current_values > 0 :
             print("Third Case")
@@ -63,15 +63,14 @@ def next_state(current_state, current_input, current_values):
             print("0 bytes")
             return State.SUCCESS,None,None
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values > 0 :
-            print("Reading chunks")
-            value, in_put = read_chunk_data(current_values)
-            return State.READ_CHUNK_DATA, value, in_put
+            print(f"\tnext_state: state is Read Chunk Data in_put  > 0 :{current_values} ")
+#            value, in_put = read_chunk_data(current_values)
+            return State.READ_CHUNK_DATA, current_input, current_values
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values == 0 :
             #            value, in_put = read_chunk_data(current_values)
-            print("All data in chunk is read wating for CHUNK CRLF")
-            in_put = expect_chunk_crlf()
-
-            print("transition to Expect Chunk CRLF from 0 chunks left")
+            print(f"\tnext_state: state is Read Chunk Data, All data in chunk is read wating for CHUNK CRLF")
+#            in_put = expect_chunk_crlf()
+            print("\next_state: transition to Expect Chunk CRLF ")
             return State.EXPECT_CHUNK_CRLF, current_values, NetworkInput.CHUNK_DATA_EMPTY
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
@@ -92,7 +91,7 @@ def run_engine(state_tuple):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
     state,  in_put, in_value = state_tuple
     counter = 0
-    while  counter < 8:
+    while  counter < 12:
         counter +=1 # времено
         #for i in range(0,10):
 
@@ -112,8 +111,12 @@ def run_engine(state_tuple):
             # далее пакуему новое состояние с
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
-                in_put = read_chunk_size()
+                in_put, in_value = read_chunk_size()
                 
+            case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
+                print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
+                in_value = read_chunk_variable_length(in_value)
+                pass
             case State.EXPECT_CHUNK_CRLF:
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
@@ -150,10 +153,25 @@ def read_chunk_size():
     #emulating zeroх ъ
     if(False):
         print(f"\t\tread_chunk_size: chunk size is empty ")
-        return NetworkInput.CHUNK_SIZE_ZERO
-    elif(True):
+        return NetworkInput.CHUNK_SIZE_ZERO, None
+    elif(False):
         print(f"\t\tread_chunk_size: chunk size is malformed ")
-        return NetworkInput.MALFORMED
+        return NetworkInput.MALFORMED, None
+    else:
+        print(f"\t\tread_chunk_size: chunk size is 8 ")
+        return NetworkInput.CHUNK_SIZE_GREATER_ZERO, 8
+
+
+def read_chunk_variable_length(current_value):
+    print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
+    if(current_value > 0):
+        #пока эмуллирует чтение затем добавим реальные
+        # специально подробно расписываю
+        new_value = current_value - 1
+        return new_value
+    else:
+        return current_value
+
 
 def read_bytes_from_content(current_value):
     if(current_value > 0):
