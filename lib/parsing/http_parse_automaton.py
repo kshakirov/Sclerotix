@@ -1,4 +1,4 @@
-
+import random
 
 
 from enum import Enum
@@ -147,9 +147,13 @@ def read_chunk_fixed_length(current_value):
         return current_value
 
 def read_chunk_size():
-    #emulating zero
-    print(f"\t\tread_chunk_size: chunk size is empty ")
-    return NetworkInput.CHUNK_SIZE_ZERO
+    #emulating zeroх ъ
+    if(False):
+        print(f"\t\tread_chunk_size: chunk size is empty ")
+        return NetworkInput.CHUNK_SIZE_ZERO
+    elif(True):
+        print(f"\t\tread_chunk_size: chunk size is malformed ")
+        return NetworkInput.MALFORMED
 
 def read_bytes_from_content(current_value):
     if(current_value > 0):
