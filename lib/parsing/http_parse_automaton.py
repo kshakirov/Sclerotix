@@ -119,6 +119,8 @@ def run_engine(state_tuple):
                 pass
             case State.EXPECT_CHUNK_CRLF:
                 print(f"run_engine: state  is EXPECT CHUNK CRLF: in_put is {in_put} in_value is {in_value} ")
+                state, in_put = expect_chunk_crlf()
+                in_value = None
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
@@ -174,6 +176,11 @@ def read_chunk_variable_length(current_value):
         return current_value
 
 
+def expect_chunk_crlf():
+    print(f"\t\texpect_chunk_crlf: emulating valid crlf to be received")
+    return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID
+    
+    
 def read_bytes_from_content(current_value):
     if(current_value > 0):
         #пока эмуллирует чтение затем добавим реальные
@@ -198,9 +205,6 @@ def read_chunk_data(value):
         print("Now all chunks are read goint to Data empty")
         return 0, NetworkInput.CHUNK_DATA_EMPTY
 
-def expect_chunk_crlf():
-    print(f"emulating valid crlf to be received")
-    return NetworkInput.CRLF_VALID
 
 
 
