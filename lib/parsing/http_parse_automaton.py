@@ -70,8 +70,8 @@ def next_state(current_state, current_input, current_values):
             #            value, in_put = read_chunk_data(current_values)
             print(f"\tnext_state: state is Read Chunk Data, All data in chunk is read wating for CHUNK CRLF")
 #            in_put = expect_chunk_crlf()
-            print("\next_state: transition to Expect Chunk CRLF ")
-            return State.EXPECT_CHUNK_CRLF, current_values, NetworkInput.CHUNK_DATA_EMPTY
+            print("\t\tnext_state: transition to Expect Chunk CRLF ")
+            return State.EXPECT_CHUNK_CRLF, NetworkInput.CHUNK_DATA_EMPTY, current_values
 
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
             return State.EXPECT_CHUNK_CRLF, None,in_put
@@ -91,7 +91,7 @@ def run_engine(state_tuple):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
     state,  in_put, in_value = state_tuple
     counter = 0
-    while  counter < 12:
+    while  counter < 24:
         counter +=1 # времено
         #for i in range(0,10):
 
@@ -178,7 +178,7 @@ def read_chunk_variable_length(current_value):
 
 def expect_chunk_crlf():
     print(f"\t\texpect_chunk_crlf: emulating valid crlf to be received")
-    return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID
+    return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
     
     
 def read_bytes_from_content(current_value):
