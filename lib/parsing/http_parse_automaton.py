@@ -111,7 +111,7 @@ def run_engine(state_tuple):
             # далее пакуему новое состояние с
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
-                in_put, in_value = read_chunk_size()
+                in_put, in_value = read_chunk_size(counter, in_value)
                 
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
@@ -152,9 +152,10 @@ def read_chunk_fixed_length(current_value):
     else:
         return current_value
 
-def read_chunk_size():
+def read_chunk_size(counter, bytes):
     #emulating zeroх ъ
-    if(False):
+    print(f"\t\tread_chunk_size: counter {counter} value {bytes}")
+    if counter > 20 :
         print(f"\t\tread_chunk_size: chunk size is empty ")
         return NetworkInput.CHUNK_SIZE_ZERO, None
     elif(False):
