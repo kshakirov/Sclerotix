@@ -89,7 +89,8 @@ def next_state(current_state, current_input, current_values):
 # но пока временно для тестирования у буду передавть сюда состояиния
 def run_engine(state_tuple):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
-    state,  in_put, in_value, data = state_tuple
+    state,  in_put, in_value, http_data = state_tuple
+    print(f"http_data is {http_data}")
     counter = 0
     while  counter < 24:
         counter +=1 # времено
@@ -111,7 +112,7 @@ def run_engine(state_tuple):
             # далее пакуему новое состояние с
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
-                in_put, in_value = read_chunk_size(counter, in_value)
+                in_put, in_value = read_chunk_size(counter, in_value, http_data)
                 
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
@@ -152,7 +153,7 @@ def read_chunk_fixed_length(current_value):
     else:
         return current_value
 
-def read_chunk_size(counter, bytes):
+def read_chunk_size(counter, bytes, http_data):
     #emulating zeroх ъ
     print(f"\t\tread_chunk_size: counter {counter} value {bytes}")
     if counter > 20 :
