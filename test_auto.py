@@ -19,11 +19,21 @@ post_chunked_fragmented = [
 #r = p.convert_row_http_to_state_input(headers)
 
 #print(r)
+mock_network_buffer = bytearray(
+    b"8\r\n"          # Чанк 1: Размер 8 байт (в hex)
+    b"12345678\r\n"    # Тело чанка 1 + CRLF
+    b"0\r\n"          # Чанк 2: Размер 0 байт (терминальный)
+    b"\r\n"           # Финальный CRLF конца тела
+)
 
-input_1 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_EMPTY, None)
-input_2 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, 4)
-input_3 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None)
-input_4 = (p.State.EXPECT_CHUNK_SIZE, p.NetworkInput.HEADERS_PARSED_CHUNKED, None)
+# Указатель операционного автомата (Регистр каретки EFSM)
+buffer_pointer = 0
+
+
+input_1 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_EMPTY, None, mock_network_buffer)
+input_2 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, 4, mock_network_buffer)
+input_3 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, mock_network_buffer)
+input_4 = (p.State.EXPECT_CHUNK_SIZE, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, mock_network_buffer)
 
 
 #p.parse_http_content(input_1)

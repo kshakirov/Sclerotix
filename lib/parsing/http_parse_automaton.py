@@ -89,7 +89,7 @@ def next_state(current_state, current_input, current_values):
 # но пока временно для тестирования у буду передавть сюда состояиния
 def run_engine(state_tuple):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
-    state,  in_put, in_value = state_tuple
+    state,  in_put, in_value, data = state_tuple
     counter = 0
     while  counter < 24:
         counter +=1 # времено
@@ -208,33 +208,4 @@ def read_chunk_data(value):
 
 
 
-
-def parseae_headers(http_row_data):
-    #normalize header names
-    return http_row_data
-
-def prep_headers(http_row_data):
-    state = State.PARSE_HEADERS
-    headers = parse_headers(http_row_data) # прошлись по заголовкам собрали их
-    #content_legnth = (TRANSFER_ENCODING in headers, headers.get(CONTENT_HEADER))
-    content_legnth = 0
-    network_input, current_value = convert_row_http_to_state_input(content_legnth)
-    return (network_input, current_value)
-
-
-def convert_row_http_to_state_input(content_length_headers):
-#    print("convert")
- #   print(content_length_headers)
-    
-    match content_length_headers:
-        case (True, None):
-            return (TRANSFER_ENCODING, 0)
-        case (True, c) if c > 0:
-            return TRANSFER_ENCODING, c
-        case (None, 0):
-            return CONTENT_HEADER, 0
-        case (None, c)  if c > 0:
-            return CONTENT_HEADER, c
-        case _ :
-            return (NetworkInput.HEADERS_PARSED_EMPTY, None)
 
