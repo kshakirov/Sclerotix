@@ -2,7 +2,7 @@ import random
 
 
 from enum import Enum
-
+from lib.parsing.utils import parse_chunk_data, get_next_chunk
 class State(Enum):
     PARSE_HEADERS = 1
     EXPECT_CHUNK_SIZE= 2
@@ -154,6 +154,12 @@ def read_chunk_fixed_length(current_value):
         return current_value
 
 def read_chunk_size(counter, bytes, http_data):
+    chunk = get_next_chunk(http_data)
+    if chunk:
+        parse_chunk_data(http_data)
+        return NetworkInput.CHUNK_SIZE_ZERO, None
+    else:
+        return NetworkInput.CHUNK_SIZE_ZERO, None
     #emulating zeroх ъ
     print(f"\t\tread_chunk_size: counter {counter} value {bytes}")
     if counter > 20 :
