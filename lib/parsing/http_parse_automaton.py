@@ -29,6 +29,9 @@ class NetworkInput(Enum):
 CONTENT_HEADER= "content-Length"
 TRANSFER_ENCODING ="transfer-Encoding"
 
+class TestBody(Enum):
+    GET = 1
+    POST_FIXED= 2
 
 
 
@@ -91,14 +94,30 @@ def run_engine(state_tuple):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
     state,  in_put, in_value, http_data = state_tuple
     print(f"http_data is {http_data}")
+    buffer = b""
     counter = 0
-    while  counter < 24:
+    while  counter < 4:
         counter +=1 # времено
         #for i in range(0,10):
 
         print(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
-
+            case State.PARSE_HEADERS if in_put == None and http_data:
+                
+                print(f"Parsing header analyzing.., data is {http_data}")
+                if(http_data[1]==TestBody.GET):
+                    state = State.SUCCESS
+                    print("Empty GET request")
+                
+                    continue
+                elif(http_data[1]==TestBody.POST_FIXED):
+                    state = State.SUCCESS
+                    print("POST FIXED REQ ")
+                
+                    continue
+                
+            
+            
             case State.SUCCESS :
                 print("SUCCESS, finishing ...")
                 break #do someting 
