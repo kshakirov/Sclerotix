@@ -95,8 +95,9 @@ def run_engine(state_tuple):
     state,  in_put, in_value, http_data = state_tuple
     print(f"http_data is {http_data}")
     buffer = b""
+    buffer_pointer = 0
     counter = 0
-    while  counter < 4:
+    while  counter < 32:
         counter +=1 # времено
         #for i in range(0,10):
 
@@ -104,17 +105,21 @@ def run_engine(state_tuple):
         match state:
             case State.PARSE_HEADERS if in_put == None and http_data:
                 
-                print(f"Parsing header analyzing.., data is {http_data}")
-                if(http_data[1]==TestBody.GET):
+
+                if(http_data[2]==TestBody.GET):
                     state = State.SUCCESS
                     print("Empty GET request")
                 
                     continue
-                elif(http_data[1]==TestBody.POST_FIXED):
-                    state = State.SUCCESS
+                elif(http_data[2]==TestBody.POST_FIXED):
+                    print(f"Parsing header analyzing.., getting buffer to read {http_data}")
+                    buffer = http_data[1]
+                    state = State.PARSE_HEADERS
+                    in_put=NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
+                    in_value = len(buffer)
                     print("POST FIXED REQ ")
-                
-                    continue
+                     
+                    #continue
                 
             
             
@@ -144,7 +149,7 @@ def run_engine(state_tuple):
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
-                bytes_left_to_read = read_chunk_fixed_length(in_value)
+                bytes_left_to_read = read_chunk_fixed_length(in_value, buffer,buffer_pointer)
                 state = State.READ_CHUNK_DATA
                 in_put = NetworkInput.READING_FIXED_DATA
                 in_value = bytes_left_to_read
@@ -162,15 +167,18 @@ def run_engine(state_tuple):
     return
 
 
-def read_chunk_fixed_length(current_value):
-    print(f"\t\tread_chunk_fixed_length in_value is {current_value}")
-    if(current_value > 0):
+def read_chunk_fixed_length(in_value, buffer, buffer_pointer):
+    print(f"\t\tread_chunk_fixed_length in_value is {in_value}  buffer length is {len(buffer)}, buffer pointer is {buffer_pointer}")
+    buffer_pointer = len(buffer) - in_value
+    if(in_value > 0):
         #пока эмуллирует чтение затем добавим реальные
         # специально подробно расписываю
-        new_value = current_value - 1
-        return new_value
+
+        print(f"\t\tread _chunk_fixed_length: read buffer[{buffer_pointer}] = {buffer[buffer_pointer]}")
+
+        return in_value - 1
     else:
-        return current_value
+        return in_value
 
 def read_chunk_size(counter, bytes, http_data):
     chunk = get_next_chunk(http_data)

@@ -51,7 +51,8 @@ mock_network_buffer = bytearray(
     b"0\r\n"          # Чанк 2: Размер 0 байт (терминальный)
     b"\r\n"           # Финальный CRLF конца тела
 )
-http_data = (mock_get_request, p.TestBody.GET)
+http_data = (mock_get_request,None, p.TestBody.GET)
+http_data = (mock_post_request, b'{"status":"ok"}', p.TestBody.POST_FIXED)
 # Указатель операционного автомата (Регистр каретки EFSM)
 buffer_pointer = 0
 
@@ -62,7 +63,7 @@ input_3 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None,ht
 input_4 = (p.State.EXPECT_CHUNK_SIZE, p.NetworkInput.HEADERS_PARSED_CHUNKED, None,http_data)
 
 input_11 = (p.State.PARSE_HEADERS, None, None,http_data)
-input_22 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, 4,http_data)
+input_22 = (p.State.PARSE_HEADERS, None, None,http_data)
 #p.parse_http_content(input_1)
 
 #p.parse_http_content(input_2)
