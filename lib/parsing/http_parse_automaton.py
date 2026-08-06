@@ -204,9 +204,20 @@ def read_chunk_size(buffer,buffer_pointer,  http_data):
         buffer_pointer = i
     buffer_pointer += 1
     chunk_size = int(hex_str, 16)
-    print(f"\t\tread_chun_size: hex str is {chunk_size}, buffer_pointer points to [{buffer_pointer}] byte")
-    return NetworkInput.CHUNK_SIZE_GREATER_ZERO, chunk_size, buffer_pointer
-
+    if chunk_size > 0:
+        print(f"\t\tread_chun_size: hex str is {chunk_size}, buffer_pointer points to [{buffer_pointer}] byte")
+        return NetworkInput.CHUNK_SIZE_GREATER_ZERO, chunk_size, buffer_pointer
+    else:
+        print(f"\t\tread_chun_size: size is 0, reading the rest from the socket and finishing ")
+        try:
+            while buffer[buffer_pointer]:
+                buffer_pointer +=1
+        except IndexError:
+            print(f"\t\tread_chun_size: all bytes are read from socket , quitting  ")
+            buffer_pointer = 0 
+            return NetworkInput.CHUNK_SIZE_ZERO, chunk_size, buffer_pointer
+            
+            
 
 def read_chunk_variable_length(current_value, buffer_pointer, buffer):
     print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
