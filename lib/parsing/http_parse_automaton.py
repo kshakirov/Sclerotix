@@ -32,6 +32,7 @@ TRANSFER_ENCODING ="transfer-Encoding"
 class TestBody(Enum):
     GET = 1
     POST_FIXED= 2
+    POST_CHUNKED_WHOLE = 3
 
 
 
@@ -121,7 +122,16 @@ def run_engine(state_tuple):
                      
                     #continue
                 
-            
+                elif(http_data[2] == TestBody.POST_CHUNKED_WHOLE):
+                    print(f"Parsing header analyzing.., it is Chunked Post Whole  getting buffer to read {http_data}")
+                    buffer = http_data[1]
+                    print(buffer)
+                    print("POST CHUNKED WHOLE ")
+                    state = State.PARSE_HEADERS
+                    in_put=NetworkInput.HEADERS_PARSED_CHUNKED
+#                    in_value = len(buffer)
+  #                  break
+                    
             
             case State.SUCCESS :
                 print("SUCCESS, finishing ...")
@@ -136,7 +146,10 @@ def run_engine(state_tuple):
             # далее пакуему новое состояние с
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
-                in_put, in_value = read_chunk_size(counter, in_value, http_data)
+                in_put, in_value, buffer_pointer = read_chunk_size(buffer, buffer_pointer, http_data)
+                print(f"run_engine: new  in_put is {in_put} in_value is {in_value}, buffer_pointer is [{buffer_pointer}] ")
+                
+                break
                 
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
@@ -180,24 +193,28 @@ def read_chunk_fixed_length(in_value, buffer, buffer_pointer):
     else:
         return in_value
 
-def read_chunk_size(counter, bytes, http_data):
-    chunk = get_next_chunk(http_data)
-    if chunk:
-        parse_chunk_data(http_data)
-        return NetworkInput.CHUNK_SIZE_ZERO, None
-    else:
-        return NetworkInput.CHUNK_SIZE_ZERO, None
-    #emulating zeroх ъ
-    print(f"\t\tread_chunk_size: counter {counter} value {bytes}")
-    if counter > 20 :
-        print(f"\t\tread_chunk_size: chunk size is empty ")
-        return NetworkInput.CHUNK_SIZE_ZERO, None
-    elif(False):
-        print(f"\t\tread_chunk_size: chunk size is malformed ")
-        return NetworkInput.MALFORMED, None
-    else:
-        print(f"\t\tread_chunk_size: chunk size is 8 ")
-        return NetworkInput.CHUNK_SIZE_GREATER_ZERO, 8
+def read_chunk_size(buffer,buffer_pointer,  http_data):
+
+    i = 0
+    hex_str = ""
+    while buffer[i] != 0x0D :
+        print(chr(buffer[i]))
+        hex_str += str(chr(buffer[i]))
+        i += 1
+        buffer_pointer = i
+
+    print(f"\t\tread_chun_size: hex str is {int(hex_str, 16)}, buffer_pointer points to [{buffer_pointer}] byte")
+    return NetworkInput.CHUNK_SIZE_GREATER_ZERO, int(hex_str, 16), buffer_pointer
+    # print(f"\t\tread_chunk_size: counter {counter} value {bytes}")
+    # if counter > 20 :
+    #     print(f"\t\tread_chunk_size: chunk size is empty ")
+    #     return NetworkInput.CHUNK_SIZE_ZERO, None
+    # elif(False):
+    #     print(f"\t\tread_chunk_size: chunk size is malformed ")
+    #     return NetworkInput.MALFORMED, None
+    # else:
+    #     print(f"\t\tread_chunk_size: chunk size is 8 ")
+    #     return NetworkInput.CHUNK_SIZE_GREATER_ZERO, 8
 
 
 def read_chunk_variable_length(current_value):
