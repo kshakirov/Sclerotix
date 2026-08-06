@@ -195,26 +195,17 @@ def read_chunk_fixed_length(in_value, buffer, buffer_pointer):
 
 def read_chunk_size(buffer,buffer_pointer,  http_data):
 
-    i = 0
+    i = buffer_pointer
     hex_str = ""
     while buffer[i] != 0x0D :
         print(chr(buffer[i]))
         hex_str += str(chr(buffer[i]))
         i += 1
         buffer_pointer = i
-
-    print(f"\t\tread_chun_size: hex str is {int(hex_str, 16)}, buffer_pointer points to [{buffer_pointer}] byte")
-    return NetworkInput.CHUNK_SIZE_GREATER_ZERO, int(hex_str, 16), buffer_pointer
-    # print(f"\t\tread_chunk_size: counter {counter} value {bytes}")
-    # if counter > 20 :
-    #     print(f"\t\tread_chunk_size: chunk size is empty ")
-    #     return NetworkInput.CHUNK_SIZE_ZERO, None
-    # elif(False):
-    #     print(f"\t\tread_chunk_size: chunk size is malformed ")
-    #     return NetworkInput.MALFORMED, None
-    # else:
-    #     print(f"\t\tread_chunk_size: chunk size is 8 ")
-    #     return NetworkInput.CHUNK_SIZE_GREATER_ZERO, 8
+    buffer_pointer += 1
+    chunk_size = int(hex_str, 16)
+    print(f"\t\tread_chun_size: hex str is {chunk_size}, buffer_pointer points to [{buffer_pointer}] byte")
+    return NetworkInput.CHUNK_SIZE_GREATER_ZERO, chunk_size, buffer_pointer
 
 
 def read_chunk_variable_length(current_value, buffer_pointer, buffer):
