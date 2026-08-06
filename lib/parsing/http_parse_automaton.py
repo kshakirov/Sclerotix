@@ -149,11 +149,11 @@ def run_engine(state_tuple):
                 in_put, in_value, buffer_pointer = read_chunk_size(buffer, buffer_pointer, http_data)
                 print(f"run_engine: new  in_put is {in_put} in_value is {in_value}, buffer_pointer is [{buffer_pointer}] ")
                 
-                break
+#                break
                 
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
-                in_value = read_chunk_variable_length(in_value)
+                in_value, buffer_pointer = read_chunk_variable_length(in_value, buffer_pointer, buffer)
                 pass
             case State.EXPECT_CHUNK_CRLF:
                 print(f"run_engine: state  is EXPECT CHUNK CRLF: in_put is {in_put} in_value is {in_value} ")
@@ -217,15 +217,16 @@ def read_chunk_size(buffer,buffer_pointer,  http_data):
     #     return NetworkInput.CHUNK_SIZE_GREATER_ZERO, 8
 
 
-def read_chunk_variable_length(current_value):
+def read_chunk_variable_length(current_value, buffer_pointer, buffer):
     print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
     if(current_value > 0):
-        #пока эмуллирует чтение затем добавим реальные
-        # специально подробно расписываю
+        # пока просто читаю не склдадываю в  буфер для проброса дальше
+        buffer_pointer += 1
+        print(f"\t\tread_chunk_variable_length:  reading byte from buffer   at [{buffer_pointer}]  byte is {chr(buffer[buffer_pointer])}") 
         new_value = current_value - 1
-        return new_value
+        return new_value, buffer_pointer
     else:
-        return current_value
+        return current_value, buffer_pointer
 
 
 def expect_chunk_crlf():

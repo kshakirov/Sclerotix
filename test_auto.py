@@ -47,7 +47,7 @@ post_chunked_fragmented = [
 
 mock_network_buffer = bytearray(
     b"8\r\n"          # Чанк 1: Размер 8 байт (в hex)
-    b"12345678\r\n"    # Тело чанка 1 + CRLF
+    b"abcdefgh\r\n"    # Тело чанка 1 + CRLF
     b"0\r\n"          # Чанк 2: Размер 0 байт (терминальный)
     b"\r\n"           # Финальный CRLF конца тела
 )
