@@ -76,16 +76,18 @@ def next_state(current_state, current_input, current_values):
 #            in_put = expect_chunk_crlf()
             print("\t\tnext_state: transition to Expect Chunk CRLF ")
             return State.EXPECT_CHUNK_CRLF, NetworkInput.CHUNK_DATA_EMPTY, current_values
-
+        
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
             return State.EXPECT_CHUNK_CRLF, None,in_put
         case State.EXPECT_CHUNK_CRLF if current_input == NetworkInput.CRLF_VALID:
             return State.EXPECT_CHUNK_SIZE,None,None
         case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.MALFORMED:
             return State.ERROR,None,None
+        case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.CHUNK_DATA_EMPTY:
+            return State.ERROR,None,None
         case _ :
-            print("Failed to find")
-            return None,None,None
+            print("Failed to find Error")
+            return State.ERROR, None, None
         
         
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
