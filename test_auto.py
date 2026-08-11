@@ -70,5 +70,7 @@ input_22 = (p.State.PARSE_HEADERS, None, None)
 #p.parse_http_content(input_2)
 
 #p.run_engine(input_3)
-p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, len(b'{"status":"ok"}'),b'{"status":"ok"}',0 )
+#p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, len(b'{"status":"ok"}'),b'{"status":"ok"}',0 )
+p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, mock_network_buffer,0 )
+
 
