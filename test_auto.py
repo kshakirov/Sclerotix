@@ -40,7 +40,7 @@ post_chunked_fragmented = [
 
 #headers = u.parse_http_req(test_http_data)
 #print(headers)
- #print("---")
+#print("---")
 #r = p.convert_row_http_to_state_input(headers)
 
 #print(r)
@@ -63,12 +63,12 @@ input_2 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, 
 input_3 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None,http_data)
 input_4 = (p.State.EXPECT_CHUNK_SIZE, p.NetworkInput.HEADERS_PARSED_CHUNKED, None,http_data)
 
-input_11 = (p.State.PARSE_HEADERS, None, None,http_data)
-input_22 = (p.State.PARSE_HEADERS, None, None,http_data)
+input_11 = (p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, )
+input_22 = (p.State.PARSE_HEADERS, None, None)
 #p.parse_http_content(input_1)
 
 #p.parse_http_content(input_2)
 
 #p.run_engine(input_3)
-p.run_engine(input_11)
+p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, len(b'{"status":"ok"}'),b'{"status":"ok"}',0 )
 

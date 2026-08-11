@@ -68,12 +68,12 @@ def next_state(current_state, current_input, current_values):
             return State.SUCCESS,None,None
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values > 0 :
             print(f"\tnext_state: state is Read Chunk Data in_put  > 0 :{current_values} ")
-#            value, in_put = read_chunk_data(current_values)
+            #            value, in_put = read_chunk_data(current_values)
             return State.READ_CHUNK_DATA, current_input, current_values
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_FLOW and current_values == 0 :
             #            value, in_put = read_chunk_data(current_values)
             print(f"\tnext_state: state is Read Chunk Data, All data in chunk is read wating for CHUNK CRLF")
-#            in_put = expect_chunk_crlf()
+            #            in_put = expect_chunk_crlf()
             print("\t\tnext_state: transition to Expect Chunk CRLF ")
             return State.EXPECT_CHUNK_CRLF, NetworkInput.CHUNK_DATA_EMPTY, current_values
         
@@ -93,12 +93,15 @@ def next_state(current_state, current_input, current_values):
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
-def run_engine(state_tuple):
+def run_engine(s, i_p,i_v, buffer, buffer_pointer):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
-    state,  in_put, in_value, http_data = state_tuple
-    print(f"http_data is {http_data}")
-    buffer = b""
-    buffer_pointer = 0
+    state = s
+    in_put = i_p
+    in_value = i_v
+    
+    print(f"http_data is {buffer}")
+    #  buffer = b""
+    #    buffer_pointer = 0
     counter = 0
     while  counter < 32:
         counter +=1 # времено
@@ -106,35 +109,35 @@ def run_engine(state_tuple):
 
         print(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
-            case State.PARSE_HEADERS if in_put == None and http_data:
-                
+            case State.PARSE_HEADERS if in_put == None :
+                break
 
-                if(http_data[2]==TestBody.GET):
-                    state = State.SUCCESS
-                    print("Empty GET request")
+                # f(http_data[2]==TestBody.GET):
+                #     state = State.SUCCESS
+                #     print("Empty GET request")
                 
-                    continue
-                elif(http_data[2]==TestBody.POST_FIXED):
-                    print(f"Parsing header analyzing.., getting buffer to read {http_data}")
-                    buffer = http_data[1]
-                    state = State.PARSE_HEADERS
-                    in_put=NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
-                    in_value = len(buffer)
-                    print("POST FIXED REQ ")
+                #     continue
+                # elif(http_data[2]==TestBody.POST_FIXED):
+                #     print(f"Parsing header analyzing.., getting buffer to read {http_data}")
+                #     buffer = http_data[1]
+                #     state = State.PARSE_HEADERS
+                #     in_put=NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
+                #     in_value = len(buffer)
+                #     print("POST FIXED REQ ")
                      
-                    #continue
+                #     #continue
                 
-                elif(http_data[2] == TestBody.POST_CHUNKED_WHOLE):
-                    print(f"Parsing header analyzing.., it is Chunked Post Whole  getting buffer to read {http_data}")
-                    buffer = http_data[1]
-                    print(buffer)
-                    print("POST CHUNKED WHOLE ")
-                    state = State.PARSE_HEADERS
-                    in_put=NetworkInput.HEADERS_PARSED_CHUNKED
-#                    in_value = len(buffer)
-  #                  break
+                # elif(http_data[2] == TestBody.POST_CHUNKED_WHOLE):
+                #     print(f"Parsing header analyzing.., it is Chunked Post Whole  getting buffer to read {http_data}")
+                #     buffer = http_data[1]
+                #     print(buffer)
+                #     print("POST CHUNKED WHOLE ")
+                #     state = State.PARSE_HEADERS
+                #     in_put=NetworkInput.HEADERS_PARSED_CHUNKED
+                #                    in_value = len(buffer)
+                #                  break
                     
-            
+
             case State.SUCCESS :
                 print("SUCCESS, finishing ...")
                 break #do someting 
@@ -204,8 +207,8 @@ def read_chunk_size(buffer,buffer_pointer,  http_data):
         hex_str += str(chr(buffer[i]))
         i += 1
         buffer_pointer = i
-    buffer_pointer += 1
-    chunk_size = int(hex_str, 16)
+        buffer_pointer += 1
+        chunk_size = int(hex_str, 16)
     if chunk_size > 0:
         print(f"\t\tread_chun_size: hex str is {chunk_size}, buffer_pointer points to [{buffer_pointer}] byte")
         return NetworkInput.CHUNK_SIZE_GREATER_ZERO, chunk_size, buffer_pointer
@@ -218,7 +221,7 @@ def read_chunk_size(buffer,buffer_pointer,  http_data):
             print(f"\t\tread_chun_size: all bytes are read from socket , quitting  ")
             buffer_pointer = 0 
             return NetworkInput.CHUNK_SIZE_ZERO, chunk_size, buffer_pointer
-            
+        
             
 
 def read_chunk_variable_length(current_value, buffer_pointer, buffer):
@@ -236,7 +239,7 @@ def read_chunk_variable_length(current_value, buffer_pointer, buffer):
 def expect_chunk_crlf():
     print(f"\t\texpect_chunk_crlf: emulating valid crlf to be received")
     return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
-    
+
     
 def read_bytes_from_content(current_value):
     if(current_value > 0):
