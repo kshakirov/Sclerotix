@@ -53,7 +53,7 @@ mock_network_buffer = bytearray(
 )
 http_data = (mock_get_request,None, p.TestBody.GET)
 http_data = (mock_post_request, b'{"status":"ok"}', p.TestBody.POST_FIXED)
-http_data = (mock_network_buffer, mock_network_buffer, p.TestBody.POST_CHUNKED_WHOLE)
+#http_data = (mock_network_buffer, mock_network_buffer, p.TestBody.POST_CHUNKED_WHOLE)
 # Указатель операционного автомата (Регистр каретки EFSM)
 buffer_pointer = 0
 
