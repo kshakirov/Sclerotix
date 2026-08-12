@@ -231,6 +231,7 @@ def read_chunk_variable_length(current_value, buffer_pointer, buffer):
         new_value = current_value - 1
         return new_value, buffer_pointer
     else:
+        buffer_pointer += 1
         return current_value, buffer_pointer
 
 
@@ -241,6 +242,7 @@ def expect_chunk_crlf(buffer, buffer_pointer):
         buffer_pointer += 1
         return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_CARRIGE_VALID, buffer_pointer
     elif(buffer[buffer_pointer]==10):
+        buffer_pointer += 1
         return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID, buffer_pointer
     else:
         print("ERROR")
