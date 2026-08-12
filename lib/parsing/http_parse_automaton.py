@@ -274,6 +274,14 @@ def expect_chunk_lf(buffer, buffer_pointer):
 def expect_chunk_crlf_final(buffer, buffer_pointer):
     print(f"\t\texpect_chunk_crlf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
     #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
+    if(len(buffer) - 1 >= buffer_pointer):
+        if(buffer[buffer_pointer]==13):
+            if(buffer[buffer_pointer + 1]==10):
+                print("OKAY")
+                return State.SUCCESS, None,None
+            else:
+                print("Wrong")
+                return State.ERROR, None, buffer_pointer + 1
     if(buffer[buffer_pointer]==13):
         buffer_pointer += 1
 #        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
