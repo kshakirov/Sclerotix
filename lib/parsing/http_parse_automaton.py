@@ -26,6 +26,7 @@ class NetworkInput(Enum):
     CRLF_AFTER_SIZE_VALID=12
     CRLF_AFTER_DATA_VALID=14
     CRLF_CARRIGE_VALID=15
+    CRLF_LINE_FEED_VALID=16
 
     
 
@@ -105,9 +106,14 @@ def next_state(current_state, current_input, current_values):
             #            in_put = expect_chunk_crlf()
             print("\tnext_state: transition to Expect Chunk CRLF ")
             return State.EXPECT_CHUNK_CRLF,current_input,current_values  
+        case State.EXPECT_CHUNK_CRLF if current_input == NetworkInput.CRLF_LINE_FEED_VALID:
+            print(f"\tnext_state: state is EXPECT CHUNK CRLF singanl is CRLF LINE FEED  VALID")
+            #            in_put = expect_chunk_crlf()
+            print("\tnext_state: transition to Expect Chunk CRLF BACK")
+            return State.EXPECT_CHUNK_CRLF,current_input,current_values  
 
-    
-
+        case State.SUCCESS:
+            return State.SUCCESS, None, None
         case _ :
             print("Failed to find Error ")
             return State.ERROR, None, None
@@ -164,6 +170,11 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr):
                 
                 pass
 #            case State.EXPECT_CHUNK_CRLF if in_put==NetworkInput.CHUNK_SIZE_GREATER_ZERO:
+            case State.EXPECT_CHUNK_CRLF if in_put==NetworkInput.CRLF_LINE_FEED_VALID:
+                print(f"run_engine: state  is EXPECT CHUNK CRLF CARRIAGE VALID: in_put is {in_put} in_value is {in_value} ")
+                state, in_put, buffer_pointer = expect_chunk_crlf_final(buffer, buffer_pointer)
+                
+                pass
             case State.EXPECT_CHUNK_CRLF :
                 print(f"run_engine: state  is EXPECT CHUNK CRLF: in_put is {in_put} in_value is {in_value} ")
                 state, in_put, buffer_pointer = expect_chunk_cr(buffer, buffer_pointer)
@@ -256,8 +267,19 @@ def expect_chunk_lf(buffer, buffer_pointer):
     #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
     if(buffer[buffer_pointer]==10):
         buffer_pointer += 1
-        return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID, buffer_pointer
+        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
     else:
+        print("ERROR")
+
+def expect_chunk_crlf_final(buffer, buffer_pointer):
+    print(f"\t\texpect_chunk_crlf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
+    #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
+    if(buffer[buffer_pointer]==13):
+        buffer_pointer += 1
+#        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
+        return State.SUCCESS, None,None
+    else:
+        return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID, buffer_pointer
         print("ERROR")
 
     
