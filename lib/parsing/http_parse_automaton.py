@@ -23,6 +23,10 @@ class NetworkInput(Enum):
     CHUNK_DATA_FLOW=10
     CHUNK_DATA_EMPTY=11
     CRLF_VALID=9
+    CRLF_AFTER_SIZE_VALID=12
+    CRLF_AFTER_DATA_VALID=14
+    CRLF_CARRIGE_VALID=15
+
     
 
 
@@ -50,6 +54,15 @@ def next_state(current_state, current_input, current_values):
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
             print("\tnext_state: transition to Expecting Chunk Size state")
             return State.EXPECT_CHUNK_SIZE, current_input, current_values
+
+        case State.EXPECT_CHUNK_SIZE if  current_input ==NetworkInput.CRLF_VALID:
+            print("\tnext_state: Expecting Chunk Size state after CRLF VALID")
+            return  State.READ_CHUNK_DATA,NetworkInput.CHUNK_DATA_FLOW, current_values
+        case State.EXPECT_CHUNK_SIZE if  current_input ==NetworkInput. CRLF_AFTER_SIZE_VALID :
+            return  State.READ_CHUNK_DATA,NetworkInput.CHUNK_DATA_FLOW, current_values
+        case State.EXPECT_CHUNK_SIZE if  current_input ==NetworkInput.CRLF_AFTER_DATA_VALID:
+            return  State.READ_CHUNK_DATA,NetworkInput.CHUNK_DATA_FLOW, current_values
+
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_ZERO:
             print("\tnext_state: Nothing to read chunk size is zero")
             return State.SUCCESS, None, None
@@ -80,28 +93,38 @@ def next_state(current_state, current_input, current_values):
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
             return State.EXPECT_CHUNK_CRLF, None,in_put
         case State.EXPECT_CHUNK_CRLF if current_input == NetworkInput.CRLF_VALID:
-            return State.EXPECT_CHUNK_SIZE,None,None
+            return State.EXPECT_CHUNK_SIZE,None,current_values
         case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.MALFORMED:
             return State.ERROR,None,None
         case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.CHUNK_DATA_EMPTY:
-            return State.ERROR,None,None
+            return State.EXPECT_CHUNK_SIZE,None,None
+        case State.EXPECT_CHUNK_CRLF if current_input==NetworkInput.CHUNK_SIZE_GREATER_ZERO:
+            return State.EXPECT_CHUNK_CRLF,None,current_values
+        case State.EXPECT_CHUNK_CRLF if current_input == NetworkInput.CRLF_CARRIGE_VALID:
+            print(f"\tnext_state: state is EXPECT CHUNK CRLF singanl is CRLF CARRIAGE VALID")
+            #            in_put = expect_chunk_crlf()
+            print("\tnext_state: transition to Expect Chunk CRLF ")
+            return State.EXPECT_CHUNK_CRLF,None,current_values  
+
+    
+
         case _ :
-            print("Failed to find Error")
+            print("Failed to find Error ")
             return State.ERROR, None, None
         
         
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
-def run_engine(s, i_p,i_v, buffer, buffer_pointer):
+def run_engine(s, i_p,i_v, buffer, buffer_ptr):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
+    buffer_pointer = buffer_ptr
     state = s
     in_put = i_p
     in_value = i_v
     
     print(f"http_data is {buffer}")
-    #  buffer = b""
-    #    buffer_pointer = 0
+
     counter = 0
     while  counter < 32:
         counter +=1 # времено
@@ -111,31 +134,6 @@ def run_engine(s, i_p,i_v, buffer, buffer_pointer):
         match state:
             case State.PARSE_HEADERS if in_put == None :
                 break
-
-                # f(http_data[2]==TestBody.GET):
-                #     state = State.SUCCESS
-                #     print("Empty GET request")
-                
-                #     continue
-                # elif(http_data[2]==TestBody.POST_FIXED):
-                #     print(f"Parsing header analyzing.., getting buffer to read {http_data}")
-                #     buffer = http_data[1]
-                #     state = State.PARSE_HEADERS
-                #     in_put=NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
-                #     in_value = len(buffer)
-                #     print("POST FIXED REQ ")
-                     
-                #     #continue
-                
-                # elif(http_data[2] == TestBody.POST_CHUNKED_WHOLE):
-                #     print(f"Parsing header analyzing.., it is Chunked Post Whole  getting buffer to read {http_data}")
-                #     buffer = http_data[1]
-                #     print(buffer)
-                #     print("POST CHUNKED WHOLE ")
-                #     state = State.PARSE_HEADERS
-                #     in_put=NetworkInput.HEADERS_PARSED_CHUNKED
-                #                    in_value = len(buffer)
-                #                  break
                     
 
             case State.SUCCESS :
@@ -151,19 +149,19 @@ def run_engine(s, i_p,i_v, buffer, buffer_pointer):
             # далее пакуему новое состояние с
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
-                in_put, in_value, buffer_pointer = read_chunk_size(buffer, buffer_pointer)
+                state, in_put, in_value, buffer_pointer  = read_chunk_size(buffer, buffer_pointer)
                 print(f"run_engine: new  in_put is {in_put} in_value is {in_value}, buffer_pointer is [{buffer_pointer}] ")
                 
 #                break
-                
+                pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
                 in_value, buffer_pointer = read_chunk_variable_length(in_value, buffer_pointer, buffer)
                 pass
             case State.EXPECT_CHUNK_CRLF:
                 print(f"run_engine: state  is EXPECT CHUNK CRLF: in_put is {in_put} in_value is {in_value} ")
-                state, in_put = expect_chunk_crlf(buffer, buffer_pointer)
-                in_value = None
+                state, in_put, buffer_pointer = expect_chunk_crlf(buffer, buffer_pointer)
+                
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
@@ -180,6 +178,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_pointer):
 
               #                  state,value, i_nput = newstate,new_value, network_input
         state,  in_put, in_value =next_state(state, in_put, in_value)
+        
 
                   
     return
@@ -206,12 +205,11 @@ def read_chunk_size(buffer,buffer_pointer):
         print(chr(buffer[i]))
         hex_str += str(chr(buffer[i]))
         i += 1
-        buffer_pointer = i
         buffer_pointer += 1
         chunk_size = int(hex_str, 16)
     if chunk_size > 0:
-        print(f"\t\tread_chunk_size: hex str is {chunk_size}, buffer_pointer points to [{buffer[buffer_pointer]}] byte")
-        return NetworkInput.CHUNK_SIZE_GREATER_ZERO, chunk_size, buffer_pointer
+        print(f"\t\tread_chunk_size: hex str is {chunk_size}, buffer_pointer points to [{buffer[buffer_pointer]}] byte, transition to Expect Chunk CRLF")
+        return State.EXPECT_CHUNK_CRLF, NetworkInput.CHUNK_SIZE_GREATER_ZERO,chunk_size, buffer_pointer 
     else:
         print(f"\t\tread_chun_size: size is 0, reading the rest from the socket and finishing ")
         try:
@@ -239,7 +237,14 @@ def read_chunk_variable_length(current_value, buffer_pointer, buffer):
 def expect_chunk_crlf(buffer, buffer_pointer):
     print(f"\t\texpect_chunk_crlf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
     #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
-    return State.ERROR, None
+    if(buffer[buffer_pointer]==13):
+        buffer_pointer += 1
+        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_CARRIGE_VALID, buffer_pointer
+    elif(buffer[buffer_pointer]==10):
+        return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID, buffer_pointer
+    else:
+        print("ERROR")
+    
     
     
 def read_bytes_from_content(current_value):
