@@ -122,7 +122,7 @@ def next_state(current_state, current_input, current_values):
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
-def run_engine(s, i_p,i_v, buffer, buffer_ptr):
+def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
     #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
     buffer_pointer = buffer_ptr
     state = s
