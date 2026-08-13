@@ -168,7 +168,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print(f"run_engine: state  is EXPECT CHUNK CRLF CARRIAGE VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, in_put, buffer_pointer = expect_chunk_lf(buffer, buffer_pointer)
                 if in_progress:
-                    return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_CARRIGE_VALID, buffer_pointer
+                    return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_CARRIGE_VALID, buffer_pointer, in_value
                 
                 
                 pass
