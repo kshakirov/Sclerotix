@@ -166,7 +166,10 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 pass
             case State.EXPECT_CHUNK_CRLF if in_put==NetworkInput.CRLF_CARRIGE_VALID:
                 print(f"run_engine: state  is EXPECT CHUNK CRLF CARRIAGE VALID: in_put is {in_put} in_value is {in_value} ")
-                state, in_put, buffer_pointer = expect_chunk_lf(buffer, buffer_pointer)
+                in_progress, state, in_put, buffer_pointer = expect_chunk_lf(buffer, buffer_pointer)
+                if in_progress:
+                    return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_CARRIGE_VALID, buffer_pointer
+                
                 
                 pass
 #            case State.EXPECT_CHUNK_CRLF if in_put==NetworkInput.CHUNK_SIZE_GREATER_ZERO:
@@ -263,13 +266,17 @@ def expect_chunk_cr(buffer, buffer_pointer):
         print("ERROR")
 
 def expect_chunk_lf(buffer, buffer_pointer):
-    print(f"\t\texpect_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
-    #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
-    if(buffer[buffer_pointer]==10):
-        buffer_pointer += 1
-        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
+    if buffer_pointer < len(buffer) - 1:
+        print(f"\t\texpect_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
+        if(buffer[buffer_pointer]==10):
+            buffer_pointer += 1
+            return False, State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
+        else:
+            print("ERROR")
     else:
-        print("ERROR")
+        print(f"\t\texpect_chunk_lf:  buffer length   {len(buffer)}  is less than  buffer_pointer  {buffer_pointer}, waiting for another fragment")
+        return True, None, None, buffer_pointer
+        
 
 def expect_chunk_crlf_final(buffer, buffer_pointer):
     print(f"\t\texpect_chunk_crlf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")

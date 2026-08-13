@@ -32,7 +32,6 @@ mock_get_request = bytearray(
 )
 
 post_chunked_fragmented = bytearray(
-    b"POST /stream HTTP/1.1\r\nHost: localhost\r\nTransfer-Encoding: chunked\r\n\r\n"
     b"5\r\n"
     b"Hel"
     b"lo\r\n"
@@ -76,7 +75,7 @@ input_22 = (p.State.PARSE_HEADERS, None, None)
 #p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, len(b'{"status":"ok"}'),b'{"status":"ok"}',0 )
 # arena = bytearray(len(mock_network_buffer))
 # p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, mock_network_buffer,0, arena )
-Arena = bytearray(len(post_chunked_fragmented))
-p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, post_chunked_fragmented,0 )
+arena = bytearray(len(post_chunked_fragmented))
+p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, post_chunked_fragmented,0, arena)
 
 
