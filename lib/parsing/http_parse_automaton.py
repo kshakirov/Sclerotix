@@ -162,7 +162,9 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
-                in_value, buffer_pointer = read_chunk_variable_length(in_value, buffer_pointer, buffer)
+                in_progress,  in_value, buffer_pointer = read_chunk_variable_length(in_value, buffer_pointer, buffer)
+                if in_progress:
+                    return State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW, buffer_pointer, in_value
                 pass
             case State.EXPECT_CHUNK_CRLF if in_put==NetworkInput.CRLF_CARRIGE_VALID:
                 print(f"run_engine: state  is EXPECT CHUNK CRLF CARRIAGE VALID: in_put is {in_put} in_value is {in_value} ")
@@ -244,16 +246,19 @@ def read_chunk_size(buffer,buffer_pointer):
             
 
 def read_chunk_variable_length(current_value, buffer_pointer, buffer):
-    print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
-    if(current_value > 0):
-        # пока просто читаю не склдадываю в  буфер для проброса дальше
-        buffer_pointer += 1
-        print(f"\t\tread_chunk_variable_length:  reading byte from buffer   at [{buffer_pointer}]  byte is {chr(buffer[buffer_pointer])}") 
-        new_value = current_value - 1
-        return new_value, buffer_pointer
+    if buffer_pointer < len(buffer) - 1:
+        print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
+        if(current_value > 0):
+            # пока просто читаю не склдадываю в  буфер для проброса дальше
+            buffer_pointer += 1
+            print(f"\t\tread_chunk_variable_length:  reading byte from buffer   at [{buffer_pointer}]  byte is {chr(buffer[buffer_pointer])}") 
+            new_value = current_value - 1
+            return False, new_value, buffer_pointer
+        else:
+            buffer_pointer += 1
+            return False, current_value, buffer_pointer
     else:
-        buffer_pointer += 1
-        return current_value, buffer_pointer
+        return True,current_value, buffer_pointer
 
 
 def expect_chunk_cr(buffer, buffer_pointer):
