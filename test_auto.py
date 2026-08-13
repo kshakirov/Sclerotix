@@ -74,8 +74,9 @@ input_22 = (p.State.PARSE_HEADERS, None, None)
 
 #p.run_engine(input_3)
 #p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH, len(b'{"status":"ok"}'),b'{"status":"ok"}',0 )
-arena = bytearray(len(mock_network_buffer))
-p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, mock_network_buffer,0, arena )
-#p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, post_chunked_fragmented,0 )
+# arena = bytearray(len(mock_network_buffer))
+# p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, mock_network_buffer,0, arena )
+Arena = bytearray(len(post_chunked_fragmented))
+p.run_engine(p.State.PARSE_HEADERS, p.NetworkInput.HEADERS_PARSED_CHUNKED, None, post_chunked_fragmented,0 )
 
 
