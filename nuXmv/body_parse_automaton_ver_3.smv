@@ -32,7 +32,7 @@ VAR
     CHUNK_DATA_FLOW,           -- Чтение байтов тела
     CHUNK_DATA_DONE,           -- Все байты вычитаны
     
-    CHUNK_SIZE_INCOMPLETE,          -- Буфер пуст (ждем следующий фрагмент)
+    CHUNK_DATA_EMPTY,          -- Буфер пуст (ждем следующий фрагмент)
     TIMEOUT, 
     MALFORMED 
   };
@@ -45,7 +45,7 @@ ASSIGN
     state = PARSE_HEADERS & input = HEADERS_PARSED_EMPTY           : SUCCESS;
     state = PARSE_HEADERS & input = HEADERS_PARSED_CONTENT_LENGTH : READ_CHUNK_DATA;
     state = PARSE_HEADERS & input = HEADERS_PARSED_CHUNKED        : EXPECT_CHUNK_SIZE;
-    state = PARSE_HEADERS & input = CHUNK_SIZE_INCOMPLETE              : PARSE_HEADERS;
+    state = PARSE_HEADERS & input = CHUNK_DATA_EMPTY              : PARSE_HEADERS;
     state = PARSE_HEADERS & input = TIMEOUT                       : ERROR;
     state = PARSE_HEADERS & input = MALFORMED                      : ERROR;
 
@@ -53,7 +53,7 @@ ASSIGN
     -- Вычитали размер -> идём ждать '\r'
     state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_GREATER_ZERO    : EXPECT_CHUNK_CR;
     state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_ZERO            : EXPECT_CHUNK_CR;
-    state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_INCOMPLETE           : EXPECT_CHUNK_SIZE;
+    state = EXPECT_CHUNK_SIZE & input = CHUNK_DATA_EMPTY           : EXPECT_CHUNK_SIZE;
     state = EXPECT_CHUNK_SIZE & input = TIMEOUT                    : ERROR;
     state = EXPECT_CHUNK_SIZE & input = MALFORMED                   : ERROR;
 
@@ -62,7 +62,7 @@ ASSIGN
     state = EXPECT_CHUNK_CR & input = CR_AFTER_SIZE_VALID         : EXPECT_CHUNK_LF;
     state = EXPECT_CHUNK_CR & input = CR_AFTER_DATA_VALID         : EXPECT_CHUNK_LF;
     state = EXPECT_CHUNK_CR & input = CR_AFTER_ZERO_VALID         : EXPECT_CHUNK_LF;
-    state = EXPECT_CHUNK_CR & input = CHUNK_SIZE_INCOMPLETE            : EXPECT_CHUNK_CR;
+    state = EXPECT_CHUNK_CR & input = CHUNK_DATA_EMPTY            : EXPECT_CHUNK_CR;
     state = EXPECT_CHUNK_CR & input = TIMEOUT                     : ERROR;
     state = EXPECT_CHUNK_CR & input = MALFORMED                    : ERROR;
 
@@ -76,7 +76,7 @@ ASSIGN
     -- Прочитали '\n' после 0-чанка -> Успешное завершение!
     state = EXPECT_CHUNK_LF & input = LF_AFTER_ZERO_VALID         : SUCCESS;
     
-    state = EXPECT_CHUNK_LF & input = CHUNK_SIZE_INCOMPLETE            : EXPECT_CHUNK_LF;
+    state = EXPECT_CHUNK_LF & input = CHUNK_DATA_EMPTY            : EXPECT_CHUNK_LF;
     state = EXPECT_CHUNK_LF & input = TIMEOUT                     : ERROR;
     state = EXPECT_CHUNK_LF & input = MALFORMED                    : ERROR;
 
@@ -84,7 +84,7 @@ ASSIGN
     state = READ_CHUNK_DATA & input = CHUNK_DATA_FLOW             : READ_CHUNK_DATA;
     -- Вычитали весь payload -> переходим к фазе ожидания '\r'
     state = READ_CHUNK_DATA & input = CHUNK_DATA_DONE             : EXPECT_CHUNK_CR;
-    state = READ_CHUNK_DATA & input = CHUNK_SIZE_INCOMPLETE            : READ_CHUNK_DATA;
+    state = READ_CHUNK_DATA & input = CHUNK_DATA_EMPTY            : READ_CHUNK_DATA;
     state = READ_CHUNK_DATA & input = TIMEOUT                      : ERROR;
     state = READ_CHUNK_DATA & input = MALFORMED                     : ERROR;
 
