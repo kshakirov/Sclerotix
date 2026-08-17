@@ -1,0 +1,108 @@
+MODULE main
+
+VAR
+  state : { 
+    PARSE_HEADERS, 
+    EXPECT_CHUNK_SIZE, 
+    READ_CHUNK_DATA, 
+    EXPECT_CHUNK_CR,   -- Шаг 1: Ожидаем '\r'
+    EXPECT_CHUNK_LF,   -- Шаг 2: Ожидаем '\n'
+    SUCCESS, 
+    ERROR 
+  };
+  
+  input : { 
+    HEADERS_PARSED_EMPTY, 
+    HEADERS_PARSED_CONTENT_LENGTH, 
+    HEADERS_PARSED_CHUNKED, 
+    
+    CHUNK_SIZE_ZERO,           -- Размер прочитан и равен 0
+    CHUNK_SIZE_GREATER_ZERO,   -- Размер прочитан и > 0
+
+    -- Сигналы для фазы 1 (Ожидание '\r')
+    CR_AFTER_SIZE_VALID,
+    CR_AFTER_DATA_VALID,
+    CR_AFTER_ZERO_VALID,
+
+    -- Сигналы для фазы 2 (Ожидание '\n')
+    LF_AFTER_SIZE_VALID,
+    LF_AFTER_DATA_VALID,
+    LF_AFTER_ZERO_VALID,
+    
+    CHUNK_DATA_FLOW,           -- Чтение байтов тела
+    CHUNK_DATA_DONE,           -- Все байты вычитаны
+    
+    CHUNK_SIZE_INCOMPLETE,          -- Буфер пуст (ждем следующий фрагмент)
+    TIMEOUT, 
+    MALFORMED 
+  };
+
+ASSIGN
+  init(state) := PARSE_HEADERS;
+
+  next(state) := case
+    -- === 1. PARSE_HEADERS ===
+    state = PARSE_HEADERS & input = HEADERS_PARSED_EMPTY           : SUCCESS;
+    state = PARSE_HEADERS & input = HEADERS_PARSED_CONTENT_LENGTH : READ_CHUNK_DATA;
+    state = PARSE_HEADERS & input = HEADERS_PARSED_CHUNKED        : EXPECT_CHUNK_SIZE;
+    state = PARSE_HEADERS & input = CHUNK_SIZE_INCOMPLETE              : PARSE_HEADERS;
+    state = PARSE_HEADERS & input = TIMEOUT                       : ERROR;
+    state = PARSE_HEADERS & input = MALFORMED                      : ERROR;
+
+    -- === 2. EXPECT_CHUNK_SIZE ===
+    -- Вычитали размер -> идём ждать '\r'
+    state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_GREATER_ZERO    : EXPECT_CHUNK_CR;
+    state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_ZERO            : EXPECT_CHUNK_CR;
+    state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_INCOMPLETE           : EXPECT_CHUNK_SIZE;
+    state = EXPECT_CHUNK_SIZE & input = TIMEOUT                    : ERROR;
+    state = EXPECT_CHUNK_SIZE & input = MALFORMED                   : ERROR;
+
+    -- === 3. EXPECT_CHUNK_CR (ФАЗА 1: ОЖИДАНИЕ '\r') ===
+    -- Прочитали '\r' -> переходим в EXPECT_CHUNK_LF, сохраняя логику контекста
+    state = EXPECT_CHUNK_CR & input = CR_AFTER_SIZE_VALID         : EXPECT_CHUNK_LF;
+    state = EXPECT_CHUNK_CR & input = CR_AFTER_DATA_VALID         : EXPECT_CHUNK_LF;
+    state = EXPECT_CHUNK_CR & input = CR_AFTER_ZERO_VALID         : EXPECT_CHUNK_LF;
+    state = EXPECT_CHUNK_CR & input = CHUNK_SIZE_INCOMPLETE            : EXPECT_CHUNK_CR;
+    state = EXPECT_CHUNK_CR & input = TIMEOUT                     : ERROR;
+    state = EXPECT_CHUNK_CR & input = MALFORMED                    : ERROR;
+
+    -- === 4. EXPECT_CHUNK_LF (ФАЗА 2: ОЖИДАНИЕ '\n' И РАЗВЯЗКА) ===
+    -- Прочитали '\n' после размера (>0) -> Идем читать данные
+    state = EXPECT_CHUNK_LF & input = LF_AFTER_SIZE_VALID         : READ_CHUNK_DATA;
+    
+    -- Прочитали '\n' после тела данных -> Идем читать новый размер чанка
+    state = EXPECT_CHUNK_LF & input = LF_AFTER_DATA_VALID         : EXPECT_CHUNK_SIZE;
+    
+    -- Прочитали '\n' после 0-чанка -> Успешное завершение!
+    state = EXPECT_CHUNK_LF & input = LF_AFTER_ZERO_VALID         : SUCCESS;
+    
+    state = EXPECT_CHUNK_LF & input = CHUNK_SIZE_INCOMPLETE            : EXPECT_CHUNK_LF;
+    state = EXPECT_CHUNK_LF & input = TIMEOUT                     : ERROR;
+    state = EXPECT_CHUNK_LF & input = MALFORMED                    : ERROR;
+
+    -- === 5. READ_CHUNK_DATA ===
+    state = READ_CHUNK_DATA & input = CHUNK_DATA_FLOW             : READ_CHUNK_DATA;
+    -- Вычитали весь payload -> переходим к фазе ожидания '\r'
+    state = READ_CHUNK_DATA & input = CHUNK_DATA_DONE             : EXPECT_CHUNK_CR;
+    state = READ_CHUNK_DATA & input = CHUNK_SIZE_INCOMPLETE            : READ_CHUNK_DATA;
+    state = READ_CHUNK_DATA & input = TIMEOUT                      : ERROR;
+    state = READ_CHUNK_DATA & input = MALFORMED                     : ERROR;
+
+    -- === ТЕРМИНАЛЬНЫЕ СОСТОЯНИЯ ===
+    state = SUCCESS : SUCCESS;
+    state = ERROR   : ERROR;
+    TRUE : ERROR;
+  esac;
+
+------------------------------------------------------------------
+-- CTL Спецификации для проверки в nuXmv
+------------------------------------------------------------------
+
+-- 1. Двухшаговый проход: Из EXPECT_CHUNK_CR при валидном CR переходим строго в EXPECT_CHUNK_LF
+SPEC AG (state = EXPECT_CHUNK_CR & (input = CR_AFTER_SIZE_VALID | input = CR_AFTER_DATA_VALID | input = CR_AFTER_ZERO_VALID) -> AX (state = EXPECT_CHUNK_LF))
+
+-- 2. Завершение развязки: Из EXPECT_CHUNK_LF при LF_AFTER_SIZE_VALID обязателен переход в READ_CHUNK_DATA
+SPEC AG (state = EXPECT_CHUNK_LF & input = LF_AFTER_SIZE_VALID -> AX (state = READ_CHUNK_DATA))
+
+-- 3. Достижимость терминации
+SPEC AG (state = EXPECT_CHUNK_LF & input = LF_AFTER_ZERO_VALID -> AX (state = SUCCESS))
