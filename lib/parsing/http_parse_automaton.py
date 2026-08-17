@@ -143,7 +143,7 @@ def next_state(current_state, current_input, current_values):
             print(f"\tnext_state: state is Read Chunk Data, All data in chunk is read wating for CHUNK CRLF")
             #            in_put = expect_chunk_crlf()
             print("\t\tnext_state: transition to Expect Chunk CRLF ")
-            return State.EXPECT_CHUNK_CRLF, NetworkInput.CHUNK_DATA_EMPTY, current_values
+            return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_DATA_VALID, current_values
         
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
             return State.EXPECT_CHUNK_CRLF, current_input,in_put
@@ -159,7 +159,7 @@ def next_state(current_state, current_input, current_values):
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
 def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
-    #    state,  i_nput = State.PARSE_HEADERS, NetworkInput.HEADERS_PARSED_EMPTY
+
     buffer_pointer = buffer_ptr
     state = s
     in_put = i_p
@@ -170,7 +170,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
     counter = 0
     while  counter < 32:
         counter +=1 # времено
-        #for i in range(0,10):
+
 
         print(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
@@ -185,16 +185,13 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 #do something
                 print("ERROR")
                 break
-            # case State.EXPECT_CHUNK_SIZE:
-            #     pass
-            # here we listen to socket for receiveng and reading headers
-            # далее пакуему новое состояние с
+
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
                 state, in_put, in_value, buffer_pointer  = read_chunk_size(buffer, buffer_pointer, in_value)
                 print(f"run_engine: new  in_put is {in_put} in_value is {in_value}, buffer_pointer is [{buffer_pointer}] ")
                 
-#                break
+
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
@@ -202,20 +199,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 if in_progress:
                     return State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW, buffer_pointer, in_value
                 pass
-            # case State.EXPECT_CHUNK_CR if in_put==NetworkInput.CRLF_CARRIGE_VALID:
-            #     print(f"run_engine: state  is EXPECT CHUNK CRLF CARRIAGE VALID: in_put is {in_put} in_value is {in_value} ")
-            #     in_progress, state, in_put, buffer_pointer = expect_chunk_lf(buffer, buffer_pointer)
-            #     if in_progress:
-            #         return State.EXPECT_CHUNK_CR, NetworkInput.CRLF_CARRIGE_VALID, buffer_pointer, in_value
-                
-                
-                pass
-#            case State.EXPECT_CHUNK_CRLF if in_put==NetworkInput.CHUNK_SIZE_GREATER_ZERO:
-            # case State.EXPECT_CHUNK_CR if in_put==NetworkInput.CRLF_LINE_FEED_VALID:
-            #     print(f"run_engine: state  is EXPECT CHUNK CRLF CARRIAGE VALID: in_put is {in_put} in_value is {in_value} ")
-            #     state, in_put, buffer_pointer = expect_chunk_crlf_final(buffer, buffer_pointer)
-                
-            #     pass
+
             case State.READ_CHUNK_CR  if in_put==NetworkInput.CR_AFTER_SIZE_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK CR and CR_AFTER_SIZE_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, buffer_pointer = read_chunk_cr(buffer, buffer_pointer)
@@ -245,7 +229,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print("run_engine: state is Default  Nothing Found,  running again state is {} network is {} looping  ...".format(state, in_put))
                 
 
-              #                  state,value, i_nput = newstate,new_value, network_input
+        print(f"run_engine: before calling next_state current value is  {in_value}")        
         state,  in_put, in_value =next_state(state, in_put, in_value)
         
 
@@ -282,9 +266,9 @@ def read_chunk_size(buffer,buffer_pointer, current_value):
             chunk_size = int(current_value, 16)
             # not yet checking malformed and error
             if chunk_size > 0:
-                return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_SIZE_VALID, current_value, buffer_pointer
+                return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_SIZE_VALID, chunk_size, buffer_pointer
             else:
-                return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_ZERO_VALID, current_value, buffer_pointer
+                return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_ZERO_VALID, chunk_size, buffer_pointer
     
         
     
