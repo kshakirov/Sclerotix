@@ -102,7 +102,10 @@ def next_state(current_state, current_input, current_values):
             return State.ERROR,current_input,current_values  
         case State.EXPECT_CHUNK_CR if current_input == NetworkInput.CR_AFTER_DATA_VALID:
             print("\tnext_state: transition to Expect Chunk CRLF BACK")
-            return State.EXPECT_CHUNK_LF,current_input,current_values  
+            return State.READ_CHUNK_CR,current_input,current_values
+        case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_DATA_VALID:
+            print("\tnext_state: transition to Expect Chunk CRLF BACK")
+            return State.READ_CHUNK_LF,current_input,current_values  
 
         # now lf
         case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_SIZE_VALID:
@@ -116,10 +119,7 @@ def next_state(current_state, current_input, current_values):
         case State.EXPECT_CHUNK_CR if current_input == NetworkInput.TIMEOUT:
             print("\tnext_state: transition to Expect Chunk CRLF ")
             return State.ERROR,current_input,current_values  
-        case State.EXPECT_CHUNK_CR if current_input == NetworkInput.CR_AFTER_DATA_VALID:
-            print("\tnext_state: transition to Expect Chunk CRLF BACK")
-            return State.EXPECT_CHUNK_LF,current_input,current_values  
-
+    
 
 
 
@@ -207,6 +207,13 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                     return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
                 
                 pass
+            case State.READ_CHUNK_CR  if in_put==NetworkInput.CR_AFTER_DATA_VALID:
+                print(f" run_engine: state  is EXPECT CHUNK CR and CR_AFTER_DATA VALID: in_put is {in_put} in_value is {in_value} ")
+                in_progress, state, buffer_pointer = read_chunk_cr_after_data(buffer, buffer_pointer)
+                if in_progress:
+                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
+                
+                pass
             case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_SIZE_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_SIZE_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
@@ -215,7 +222,16 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_SIZE_IS VALID:  in_value is {in_value} ")
                 in_value = in_value
                 pass
+            case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_DATA_VALID:
+                print(f" run_engine: state  is READ CHUNK LF and CR_AFTER_DATA VALID: in_put is {in_put} in_value is {in_value} ")
+                in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
+                if in_progress:
+                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+                print(f"run_engine: state  is READ CHUNK LF and CR_AFTER_DATA VALID:  in_value is {in_value} ")
+                in_value = in_value
+                pass
 
+            
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
                 bytes_left_to_read = read_chunk_fixed_length(in_value, buffer,buffer_pointer)
@@ -332,6 +348,33 @@ def read_chunk_lf(buffer, buffer_pointer):
         if(buffer[buffer_pointer]==10):
             buffer_pointer += 1
             return False, State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW,  buffer_pointer
+        else:
+            return False, State.ERROR,Nonde,  buffer_pointer
+    else:
+        print(f"\t\tread_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer} is larger than buffer returning to main handler")
+        return True, None,NetworkInput.CR_AFTER_SIZE_VALID,buffer_pointer
+
+
+def read_chunk_cr_after_data(buffer, buffer_pointer):
+    if buffer_pointer < len(buffer):
+        print(f"\t\tread_chunk_cr_after_data:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid cr to be received")
+
+        if(buffer[buffer_pointer]==13):
+            buffer_pointer += 1
+            return False, State.EXPECT_CHUNK_LF, buffer_pointer
+        else:
+            return False, State.ERROR, buffer_pointer
+    else:
+        print(f"\t\tread_chunk_cr:  buffer is  {buffer} , buffer_pointer is {buffer_pointer} is larger than buffer returning to main handler")
+        return True, None,buffer_pointer
+
+def read_chunk_lf_after_data(buffer, buffer_pointer):
+    if buffer_pointer < len(buffer):
+        print(f"\t\tread_chunk_lf_after data valid:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid lf to be received")
+
+        if(buffer[buffer_pointer]==10):
+            buffer_pointer += 1
+            return False, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_FLOW,  buffer_pointer
         else:
             return False, State.ERROR,Nonde,  buffer_pointer
     else:
