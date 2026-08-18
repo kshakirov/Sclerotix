@@ -216,6 +216,13 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                     return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
                 
                 pass
+            case State.READ_CHUNK_CR  if in_put==NetworkInput.CR_AFTER_ZERO_VALID:
+                print(f" run_engine: state  is EXPECT CHUNK CR and CR_AFTER_ZERO VALID: in_put is {in_put} in_value is {in_value} ")
+                in_progress, state, buffer_pointer = read_chunk_cr_after_data(buffer, buffer_pointer)
+                if in_progress:
+                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
+                
+                pass
             case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_SIZE_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_SIZE_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
@@ -224,6 +231,15 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_SIZE_IS VALID:  in_value is {in_value} ")
                 in_value = in_value
                 pass
+
+            # case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_ZERO_VALID:
+            #     print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO_IS VALID: in_put is {in_put} in_value is {in_value} ")
+            #     in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
+            #     if in_progress:
+            #         return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+            #     print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO VALID:  in_value is {in_value} ")
+            #     in_value = in_value
+            #     pass
             case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_DATA_VALID:
                 print(f" run_engine: state  is READ CHUNK LF and CR_AFTER_DATA VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf_after_data(buffer, buffer_pointer)
