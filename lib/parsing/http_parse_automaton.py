@@ -188,7 +188,9 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
 
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
-                state, in_put, in_value, buffer_pointer  = read_chunk_size(buffer, buffer_pointer, in_value)
+                in_progress, state, in_put, in_value, buffer_pointer  = read_chunk_size(buffer, buffer_pointer, in_value)
+                if in_progress:
+                    return state, in_put,buffer_pointer, in_value
                 print(f"run_engine: new  in_put is {in_put} in_value is {in_value}, buffer_pointer is [{buffer_pointer}] ")
                 
 
@@ -275,17 +277,18 @@ def read_chunk_size(buffer,buffer_pointer, current_value):
         if size_digit != 0x0D:
             current_value += str(chr(size_digit))
             buffer_pointer += 1
-            return State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY, current_value, buffer_pointer
+            return False, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY, current_value, buffer_pointer
         else:
             #buffer pointer remains the same
             current_value += str(chr(size_digit))
             chunk_size = int(current_value, 16)
             # not yet checking malformed and error
             if chunk_size > 0:
-                return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_SIZE_VALID, chunk_size, buffer_pointer
+                return False, State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_SIZE_VALID, chunk_size, buffer_pointer
             else:
-                return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_ZERO_VALID, chunk_size, buffer_pointer
-    
+                return False, State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_ZERO_VALID, chunk_size, buffer_pointer
+    else:
+        return True, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY, current_value, buffer_pointer
         
     
     # i = buffer_pointer
