@@ -86,7 +86,7 @@ def next_state(current_state, current_input, current_values):
             return State.ERROR,None,None
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_DATA_EMPTY:
             print("\tnext_state: Nothing to read yet, no size waiting ... ")
-            return State.EXPECT_CHUNK_SIZE, input, current_values
+            return State.EXPECT_CHUNK_SIZE, current_input, current_values
 
         ###################################### expect cr and lf #########################################
         case State.EXPECT_CHUNK_CR if current_input == NetworkInput.CR_AFTER_SIZE_VALID:
@@ -374,7 +374,7 @@ def read_chunk_lf_after_data(buffer, buffer_pointer):
 
         if(buffer[buffer_pointer]==10):
             buffer_pointer += 1
-            return False, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_FLOW,  buffer_pointer
+            return False, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY,  buffer_pointer
         else:
             return False, State.ERROR,Nonde,  buffer_pointer
     else:
