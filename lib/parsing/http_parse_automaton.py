@@ -372,63 +372,63 @@ def read_chunk_lf_after_data(buffer, buffer_pointer):
         return True, None,NetworkInput.CR_AFTER_DATA_VALID,buffer_pointer
 
 
-def expect_chunk_lf(buffer, buffer_pointer):
-    if buffer_pointer < len(buffer) - 1:
-        print(f"\t\tread_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
-        if(buffer[buffer_pointer]==10):
-            buffer_pointer += 1
-            return False, State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
-        else:
-            print("ERROR")
-    else:
-        print(f"\t\texpect_chunk_lf:  buffer length   {len(buffer)}  is less than  buffer_pointer  {buffer_pointer}, waiting for another fragment")
-        return True, None, None, buffer_pointer
+# def expect_chunk_lf(buffer, buffer_pointer):
+#     if buffer_pointer < len(buffer) - 1:
+#         print(f"\t\tread_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, current byte is {buffer[buffer_pointer]} valid crlf to be received")
+#         if(buffer[buffer_pointer]==10):
+#             buffer_pointer += 1
+#             return False, State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
+#         else:
+#             print("ERROR")
+#     else:
+#         print(f"\t\texpect_chunk_lf:  buffer length   {len(buffer)}  is less than  buffer_pointer  {buffer_pointer}, waiting for another fragment")
+#         return True, None, None, buffer_pointer
         
 
-def expect_chunk_crlf_final(buffer, buffer_pointer):
-    print(f"\t\texpect_chunk_crlf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, buffer length  is {len(buffer)} current byte is {buffer[buffer_pointer]}   valid crlf to be received")
-    #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
-    if(len(buffer)  > buffer_pointer):
-        if(buffer[buffer_pointer]==13):
-            if(buffer[buffer_pointer + 1]==10):
-                print("OKAY")
-                return State.SUCCESS, None,None
-        else:
-                print("Wrong")
-                return State.ERROR, None, buffer_pointer + 1
-    if(buffer[buffer_pointer]==13):
-        buffer_pointer += 1
-#        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
-        return State.SUCCESS, None,None
-    else:
-        return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID, buffer_pointer
-        print("ERROR")
+# def expect_chunk_crlf_final(buffer, buffer_pointer):
+#     print(f"\t\texpect_chunk_crlf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer}, buffer length  is {len(buffer)} current byte is {buffer[buffer_pointer]}   valid crlf to be received")
+#     #return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_VALID
+#     if(len(buffer)  > buffer_pointer):
+#         if(buffer[buffer_pointer]==13):
+#             if(buffer[buffer_pointer + 1]==10):
+#                 print("OKAY")
+#                 return State.SUCCESS, None,None
+#         else:
+#                 print("Wrong")
+#                 return State.ERROR, None, buffer_pointer + 1
+#     if(buffer[buffer_pointer]==13):
+#         buffer_pointer += 1
+# #        return State.EXPECT_CHUNK_CRLF, NetworkInput.CRLF_LINE_FEED_VALID, buffer_pointer
+#         return State.SUCCESS, None,None
+#     else:
+#         return State.EXPECT_CHUNK_SIZE, NetworkInput.CRLF_VALID, buffer_pointer
+#         print("ERROR")
 
     
     
-def read_bytes_from_content(current_value):
-    if(current_value > 0):
-        #пока эмуллирует чтение затем добавим реальные
-        # специально подробно расписываю
-        new_value = current_value - 1
-        return new_value
-    else:
-        return current_value
+# def read_bytes_from_content(current_value):
+#     if(current_value > 0):
+#         #пока эмуллирует чтение затем добавим реальные
+#         # специально подробно расписываю
+#         new_value = current_value - 1
+#         return new_value
+#     else:
+#         return current_value
 
-def from_parse_chunk_to_expect_chunk_size():
-    #здесь мы читаем данные из сети и ищем  16 ричную строку
-    if(False):
-        return  0, NetworkInput.CHUNK_SIZE_ZERO
-    else:
-        return 10, NetworkInput.CHUNK_SIZE_GREATER_ZERO
+# def from_parse_chunk_to_expect_chunk_size():
+#     #здесь мы читаем данные из сети и ищем  16 ричную строку
+#     if(False):
+#         return  0, NetworkInput.CHUNK_SIZE_ZERO
+#     else:
+#         return 10, NetworkInput.CHUNK_SIZE_GREATER_ZERO
 
-def read_chunk_data(value):
-    print(f"emulating readin chunk data: read {value} cut out one byte" )
-    if(value > 0):
-        return value - 1, NetworkInput.CHUNK_DATA_FLOW
-    else:
-        print("Now all chunks are read goint to Data empty")
-        return 0, NetworkInput.CHUNK_DATA_EMPTY
+# def read_chunk_data(value):
+#     print(f"emulating readin chunk data: read {value} cut out one byte" )
+#     if(value > 0):
+#         return value - 1, NetworkInput.CHUNK_DATA_FLOW
+#     else:
+#         print("Now all chunks are read goint to Data empty")
+#         return 0, NetworkInput.CHUNK_DATA_EMPTY
 
 
 
