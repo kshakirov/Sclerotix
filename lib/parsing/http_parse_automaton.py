@@ -61,15 +61,6 @@ def next_state(current_state, current_input, current_values):
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CHUNKED:
             print("\tnext_state: transition to Expecting Chunk Size state")
             return State.EXPECT_CHUNK_SIZE, current_input, current_values
-        # why we need it ?
-        # case State.EXPECT_CHUNK_SIZE if  current_input ==NetworkInput.CRLF_VALID:
-        #     print("\tnext_state: Expecting Chunk Size state after CRLF VALID")
-        #     return  State.READ_CHUNK_DATA,NetworkInput.CHUNK_DATA_FLOW, current_values
-        # case State.EXPECT_CHUNK_SIZE if  current_input ==NnetworkInput. CRLF_AFTER_SIZE_VALID :
-        #     return  State.READ_CHUNK_DATA,NetworkInput.CHUNK_DATA_FLOW, current_values
-        # case State.EXPECT_CHUNK_SIZE if  current_input ==NetworkInput.CRLF_AFTER_DATA_VALID:
-        #     return  State.READ_CHUNK_DATA,NetworkInput.CHUNK_DATA_FLOW, current_values
-
 
         # ===== expect chunk size 
         case State.EXPECT_CHUNK_SIZE if current_input == NetworkInput.CHUNK_SIZE_ZERO:
