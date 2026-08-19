@@ -284,26 +284,6 @@ def read_chunk_size(buffer,buffer_pointer, current_value):
         return True, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY, current_value, buffer_pointer
         
     
-    # i = buffer_pointer
-    # hex_str = ""
-    # while buffer[i] != 0x0D :
-    #     print(chr(buffer[i]))
-    #     hex_str += str(chr(buffer[i]))
-    #     i += 1
-    #     buffer_pointer += 1
-    #     chunk_size = int(hex_str, 16)
-    # if chunk_size > 0:
-    #     print(f"\t\tread_chunk_size: hex str is {chunk_size}, buffer_pointer points to [{buffer[buffer_pointer]}] byte, transition to Expect Chunk CRLF")
-    #     return State.EXPECT_CHUNK_CRLF, NetworkInput.CHUNK_SIZE_GREATER_ZERO,chunk_size, buffer_pointer 
-    # else:
-    #     print(f"\t\tread_chun_size: size is 0, reading the rest from the socket and finishing ")
-    #     try:
-    #         while buffer[buffer_pointer]:
-    #             buffer_pointer +=1
-    #     except IndexError:
-    #         print(f"\t\tread_chun_size: all bytes are read from socket , quitting  ")
-    #         buffer_pointer = 0 
-    #         return NetworkInput.CHUNK_SIZE_ZERO, chunk_size, buffer_pointer
         
             
 
