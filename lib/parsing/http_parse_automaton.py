@@ -110,15 +110,19 @@ def next_state(current_state, current_input, current_values):
         # now lf
         case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_SIZE_VALID:
             return State.READ_CHUNK_LF,current_input,current_values
-        case State.EXPECT_CHUNK_CR if current_input==NetworkInput.MALFORMED:
-            return State.ERROR,current_input,current_values
-        case State.EXPECT_CHUNK_CR if current_input==NetworkInput.CHUNK_DATA_EMPTY:
-            return State.EXPECT_CHUNK_CR,current_input,current_values
-        case State.EXPECT_CHUNK_CR if current_input==NetworkInput.CR_AFTER_ZERO_VALID:
-            return State.EXPECT_CHUNK_LF,current_input,current_values
-        case State.EXPECT_CHUNK_CR if current_input == NetworkInput.TIMEOUT:
-            print("\tnext_state: transition to Expect Chunk CRLF ")
-            return State.ERROR,current_input,current_values  
+        case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_ZERO_VALID:
+            print("\tnext_state: transition to Expect Chunk CRLF BACK")
+            return State.READ_CHUNK_LF,current_input,current_values  
+
+        # case State.EXPECT_CHUNK_CR if current_input==NetworkInput.MALFORMED:
+        #     return State.ERROR,current_input,current_values
+        # case State.EXPECT_CHUNK_CR if current_input==NetworkInput.CHUNK_DATA_EMPTY:
+        #     return State.EXPECT_CHUNK_CR,current_input,current_values
+        # case State.EXPECT_CHUNK_CR if current_input==NetworkInput.CR_AFTER_ZERO_VALID:
+        #     return State.EXPECT_CHUNK_LF,current_input,current_values
+        # case State.EXPECT_CHUNK_CR if current_input == NetworkInput.TIMEOUT:
+        #     print("\tnext_state: transition to Expect Chunk CRLF ")
+        #     return State.ERROR,current_input,current_values  
     
 
 
@@ -232,14 +236,14 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 in_value = in_value
                 pass
 
-            # case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_ZERO_VALID:
-            #     print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO_IS VALID: in_put is {in_put} in_value is {in_value} ")
-            #     in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
-            #     if in_progress:
-            #         return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
-            #     print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO VALID:  in_value is {in_value} ")
-            #     in_value = in_value
-            #     pass
+            case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_ZERO_VALID:
+                print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO_IS VALID: in_put is {in_put} in_value is {in_value} ")
+                in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
+                if in_progress:
+                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+                print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO VALID:  in_value is {in_value} ")
+                in_value = in_value
+                pass
             case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_DATA_VALID:
                 print(f" run_engine: state  is READ CHUNK LF and CR_AFTER_DATA VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf_after_data(buffer, buffer_pointer)
