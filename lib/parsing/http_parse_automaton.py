@@ -89,20 +89,14 @@ def next_state(current_state, current_input, current_values):
         case State.EXPECT_CHUNK_CR if current_input==NetworkInput.CR_AFTER_ZERO_VALID:
             return State.READ_CHUNK_CR,current_input,current_values
         case State.EXPECT_CHUNK_CR if current_input == NetworkInput.TIMEOUT:
-            print("\tnext_state: transition to Expect Chunk CRLF ")
             return State.ERROR,current_input,current_values  
         case State.EXPECT_CHUNK_CR if current_input == NetworkInput.CR_AFTER_DATA_VALID:
-            print("\tnext_state: transition to Expect Chunk CRLF BACK")
             return State.READ_CHUNK_CR,current_input,current_values
         case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_DATA_VALID:
-            print("\tnext_state: transition to Expect Chunk CRLF BACK")
             return State.READ_CHUNK_LF,current_input,current_values  
-
-        # now lf
         case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_SIZE_VALID:
             return State.READ_CHUNK_LF,current_input,current_values
         case State.EXPECT_CHUNK_LF if current_input == NetworkInput.CR_AFTER_ZERO_VALID:
-            print("\tnext_state: transition to Expect Chunk CRLF BACK")
             return State.READ_CHUNK_LF,current_input,current_values  
     
 
