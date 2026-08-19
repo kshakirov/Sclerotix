@@ -9,9 +9,9 @@ class State(Enum):
     READ_CHUNK_DATA = 3
     SUCCESS= 4
     ERROR = 5
-    EXPECT_CHUNK_CR=6,
-    EXPECT_CHUNK_LF=7,
-    READ_CHUNK_CR=8, 
+    EXPECT_CHUNK_CR=6
+    EXPECT_CHUNK_LF=7
+    READ_CHUNK_CR=8
     READ_CHUNK_LF=9
 
 class NetworkInput(Enum):
@@ -28,10 +28,10 @@ class NetworkInput(Enum):
     CRLF_VALID=9
     CR_AFTER_SIZE_VALID=12
     CR_AFTER_DATA_VALID=14
-    CR_AFTER_ZERO_VALID=15,
+    CR_AFTER_ZERO_VALID=15
     LF_AFTER_SIZE_VALID=16
     LF_AFTER_DATA_VALID=17
-    LF_AFTER_ZERO_VALID=18,
+    LF_AFTER_ZERO_VALID=18
     TIMEOUT= 19
 
     
@@ -54,7 +54,7 @@ def next_state(current_state, current_input, current_values):
 
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_EMPTY:
             print("First case")
-            return State.SUCCESS, None
+            return State.SUCCESS, None, None
         case State.PARSE_HEADERS if current_input == NetworkInput.HEADERS_PARSED_CONTENT_LENGTH:
             print("Second case")
             return (State.READ_CHUNK_DATA,  NetworkInput.READING_FIXED_DATA, current_values)
@@ -123,7 +123,7 @@ def next_state(current_state, current_input, current_values):
             return State.EXPECT_CHUNK_CR, NetworkInput.CR_AFTER_DATA_VALID, current_values
         
         case State.READ_CHUNK_DATA if current_input == NetworkInput.CHUNK_DATA_EMPTY :
-            return State.EXPECT_CHUNK_CRLF, current_input,in_put
+            return State.READ_CHUNK_DATA, current_input,current_values
 
         case State.SUCCESS:
             return State.SUCCESS, None, None
@@ -161,7 +161,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
             case State.ERROR:
                 #do something
                 print("ERROR")
-                break
+                return state,in_put, buffer_pointer, in_value
 
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
@@ -327,7 +327,7 @@ def read_chunk_lf(buffer, buffer_pointer):
             buffer_pointer += 1
             return False, State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW,  buffer_pointer
         else:
-            return False, State.ERROR,Nonde,  buffer_pointer
+            return False, State.ERROR,None,  buffer_pointer
     else:
         print(f"\t\tread_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer} is larger than buffer returning to main handler")
         return True, None,NetworkInput.CR_AFTER_SIZE_VALID,buffer_pointer
@@ -341,7 +341,7 @@ def read_chunk_lf_after_zero(buffer, buffer_pointer):
             #for the time being
             return False, State.SUCCESS, NetworkInput.CHUNK_DATA_FLOW,  buffer_pointer
         else:
-            return False, State.ERROR,Nonde,  buffer_pointer
+            return False, State.ERROR,None,  buffer_pointer
     else:
         print(f"\t\tread_chunk_lf:  buffer is  {buffer} , buffer_pointer is {buffer_pointer} is larger than buffer returning to main handler")
         return True, None,NetworkInput.CR_AFTER_ZERO_VALID,buffer_pointer
@@ -368,7 +368,7 @@ def read_chunk_lf_after_data(buffer, buffer_pointer):
             buffer_pointer += 1
             return False, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY,  buffer_pointer
         else:
-            return False, State.ERROR,Nonde,  buffer_pointer
+            return False, State.ERROR,None,  buffer_pointer
     else:
         print(f"\t\tread_chunk_lf after data:  buffer is  {buffer} , buffer_pointer is {buffer_pointer} is larger than buffer returning to main handler")
         return True, None,NetworkInput.CR_AFTER_DATA_VALID,buffer_pointer
