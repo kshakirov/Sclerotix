@@ -273,7 +273,8 @@ def read_chunk_size(buffer,buffer_pointer, current_value):
             return False, State.EXPECT_CHUNK_SIZE, NetworkInput.CHUNK_DATA_EMPTY, current_value, buffer_pointer
         else:
             #buffer pointer remains the same
-            current_value += str(chr(size_digit))
+            #current_value += str(chr(size_digit))
+            #current value that we have collected previously
             chunk_size = int(current_value, 16)
             # not yet checking malformed and error
             if chunk_size > 0:
@@ -288,12 +289,13 @@ def read_chunk_size(buffer,buffer_pointer, current_value):
             
 
 def read_chunk_variable_length(current_value, buffer_pointer, buffer):
-    if buffer_pointer < len(buffer) - 1:
+    if buffer_pointer < len(buffer) :
         print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
         if(current_value > 0):
             # пока просто читаю не склдадываю в  буфер для проброса дальше
+
+            print(f"\t\tread_chunk_variable_length:  reading byte from buffer   at [{buffer_pointer}]  byte is {chr(buffer[buffer_pointer])}")
             buffer_pointer += 1
-            print(f"\t\tread_chunk_variable_length:  reading byte from buffer   at [{buffer_pointer}]  byte is {chr(buffer[buffer_pointer])}") 
             new_value = current_value - 1
             return False, new_value, buffer_pointer
         else:
