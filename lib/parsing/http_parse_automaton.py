@@ -157,8 +157,8 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
 
         print(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
-            case State.PARSE_HEADERS if in_put == None :
-                break
+            case State.PARSE_HEADERS:
+                pass
                     
 
             case State.SUCCESS :
