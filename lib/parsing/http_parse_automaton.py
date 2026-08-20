@@ -138,7 +138,7 @@ def next_state(current_state, current_input, current_values):
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
-def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
+def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer):
 
     buffer_pointer = buffer_ptr
     state = s
@@ -160,61 +160,61 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
 
             case State.SUCCESS :
                 print("SUCCESS, finishing ...")
-                return state,in_put, buffer_pointer, in_value
+                return state,in_put, buffer_pointer, in_value, arena_pointer
             case State.ERROR:
                 #do something
                 print("ERROR")
-                return state,in_put, buffer_pointer, in_value
+                return state,in_put, buffer_pointer, in_value, arena_pointer
 
             case State.EXPECT_CHUNK_SIZE :
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, in_put, in_value, buffer_pointer  = read_chunk_size(buffer, buffer_pointer, in_value)
                 if in_progress:
-                    return state, in_put,buffer_pointer, in_value
+                    return state, in_put,buffer_pointer, in_value, arena_pointer
                 print(f"run_engine: new  in_put is {in_put} in_value is {in_value}, buffer_pointer is [{buffer_pointer}] ")
                 
 
                 pass
             case State.READ_CHUNK_DATA if in_put == NetworkInput.CHUNK_DATA_FLOW:
                 print(f"run_engine: state  is READ CHUNK DATA: in_put is {in_put} in_value is {in_value} ")
-                in_progress,  in_value, buffer_pointer = read_chunk_variable_length(in_value, buffer_pointer, buffer)
+                in_progress,  in_value, buffer_pointer, arena_pointer = read_chunk_variable_length(in_value, buffer_pointer, buffer, arena, arena_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW, buffer_pointer, in_value
+                    return State.READ_CHUNK_DATA, NetworkInput.CHUNK_DATA_FLOW, buffer_pointer, in_value, arena_pointer
                 pass
 
             case State.READ_CHUNK_CR  if in_put==NetworkInput.CR_AFTER_SIZE_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK CR and CR_AFTER_SIZE_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, buffer_pointer = read_chunk_cr(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value, arena_pointer
                 
                 pass
             case State.READ_CHUNK_CR  if in_put==NetworkInput.CR_AFTER_DATA_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK CR and CR_AFTER_DATA VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, buffer_pointer = read_chunk_cr_after_data(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value, arena_pointer
                 
                 pass
             case State.READ_CHUNK_CR  if in_put==NetworkInput.CR_AFTER_ZERO_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK CR and CR_AFTER_ZERO VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, buffer_pointer = read_chunk_cr_after_data(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value, arena_pointer
                 
                 pass
             case State.READ_CHUNK_CR  if in_put==NetworkInput.LF_AFTER_ZERO_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK CR and LF_AFTER_ZERO VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, buffer_pointer = read_chunk_cr_after_data(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_CR, in_put,buffer_pointer, in_value, arena_pointer
                 
                 pass
             case State.READ_CHUNK_LF  if in_put==NetworkInput.CR_AFTER_SIZE_VALID:
                 print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_SIZE_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value, arena_pointer
                 print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_SIZE_IS VALID:  in_value is {in_value} ")
                 in_value = in_value
                 pass
@@ -223,7 +223,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print(f" run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf_after_zero(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value, arena_pointer
                 print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO VALID:  in_value is {in_value} ")
                 in_value = in_value
                 pass
@@ -232,7 +232,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print(f" run_engine: state  is EXPECT CHUNK LF and LF_AFTER_ZERO_IS VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf_after_zero_final(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value, arena_pointer
                 print(f"run_engine: state  is EXPECT CHUNK LF and CR_AFTER_ZERO VALID:  in_value is {in_value} ")
                 in_value = in_value
                 pass
@@ -240,7 +240,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena):
                 print(f" run_engine: state  is READ CHUNK LF and CR_AFTER_DATA VALID: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state,in_put, buffer_pointer = read_chunk_lf_after_data(buffer, buffer_pointer)
                 if in_progress:
-                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value
+                    return State.READ_CHUNK_LF, in_put,buffer_pointer, in_value, arena_pointer
                 print(f"run_engine: state  is READ CHUNK LF and CR_AFTER_DATA VALID:  in_value is {in_value} ")
                 in_value = in_value
                 pass
@@ -307,21 +307,22 @@ def read_chunk_size(buffer,buffer_pointer, current_value):
         
             
 
-def read_chunk_variable_length(current_value, buffer_pointer, buffer):
+def read_chunk_variable_length(current_value, buffer_pointer, buffer, arena, arena_pointer):
     if buffer_pointer < len(buffer) :
         print(f"\t\tread_chunk_variable_length:  in_value is {current_value}")
         if(current_value > 0):
             # пока просто читаю не склдадываю в  буфер для проброса дальше
-
+            arena[arena_pointer] = buffer[buffer_pointer]
             print(f"\t\tread_chunk_variable_length:  reading byte from buffer   at [{buffer_pointer}]  byte is {chr(buffer[buffer_pointer])}")
             buffer_pointer += 1
+            arena_pointer += 1
             new_value = current_value - 1
-            return False, new_value, buffer_pointer
+            return False, new_value, buffer_pointer, arena_pointer
         else:
             buffer_pointer += 1
-            return False, current_value, buffer_pointer
+            return False, current_value, buffer_pointer, arena_pointer
     else:
-        return True,current_value, buffer_pointer
+        return True,current_value, buffer_pointer, arena_pointer
 
 
 def read_chunk_cr(buffer, buffer_pointer):
