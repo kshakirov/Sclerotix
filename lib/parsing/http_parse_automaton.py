@@ -248,7 +248,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer):
             
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 print("run_engine: Reading chunks of fixed length")
-                bytes_left_to_read = read_chunk_fixed_length(in_value, buffer,buffer_pointer)
+                bytes_left_to_read, arena_pointer = read_chunk_fixed_length(in_value, buffer,buffer_pointer, arena, arena_pointer)
                 state = State.READ_CHUNK_DATA
                 in_put = NetworkInput.READING_FIXED_DATA
                 in_value = bytes_left_to_read
@@ -267,18 +267,18 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer):
     return
 
 
-def read_chunk_fixed_length(in_value, buffer, buffer_pointer):
+def read_chunk_fixed_length(in_value, buffer, buffer_pointer, arena, arena_pointer):
     print(f"\t\tread_chunk_fixed_length in_value is {in_value}  buffer length is {len(buffer)}, buffer pointer is {buffer_pointer}")
     buffer_pointer = len(buffer) - in_value
     if(in_value > 0):
         #пока эмуллирует чтение затем добавим реальные
         # специально подробно расписываю
-
+        arena[arena_pointer] = buffer[buffer_pointer]
         print(f"\t\tread _chunk_fixed_length: read buffer[{buffer_pointer}] = {buffer[buffer_pointer]}")
-
-        return in_value - 1
+        arena_pointer += 1
+        return in_value - 1, arena_pointer
     else:
-        return in_value
+        return in_value, arena_pointer
 
 def read_chunk_size(buffer,buffer_pointer, current_value):
     current_value = current_value or ""
