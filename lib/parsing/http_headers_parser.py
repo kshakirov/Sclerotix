@@ -14,7 +14,8 @@ class HeaderState(Enum):
 #пока предполагаем что это все придет одним куском
 def parse_req_header(payload):
     state =HeaderState.METHOD
-    offset_table = array('i') # на время только 
+    offset_table = array('i') # на время только
+    next_offset_id =6
     counter =0
     while counter < len(payload):
         match state:
@@ -33,20 +34,47 @@ def parse_req_header(payload):
                  offset_table.insert(4, counter + 1)
                  counter+=1
                  state=HeaderState.REQVERSION
+            case HeaderState.REQURI:
+                counter+=1 
 
             case HeaderState.REQVERSION if payload[counter]==13:
                  offset_table.insert(5,counter)
                  counter+=1
                  state=HeaderState.EXPECT_CLRF
+            case HeaderState.REQVERSION:
+                counter+=1
             case HeaderState.EXPECT_CLRF if payload[counter]==10:
-                 offset_table.insert(6,counter + 1)
+                 offset_table.insert(next_offset_id, counter + 1)
                  counter+=1
+                 next_offset_id += 1
                  state=HeaderState.HEADER_NAME
-            
+            case HeaderState.HEADER_NAME if payload[counter]==58:
+                 offset_table.insert(next_offset_id, counter)
+                 next_offset_id += 1
+                 offset_table.insert(next_offset_id, counter + 1)
+                 next_offset_id += 1
+                 state = HeaderState.HEADER_VALUE
+                 counter += 1
+            case HeaderState.HEADER_NAME if payload[counter] == 10:
+                counter += 1
+                state= HeaderState.SUCCESS
+                #пока не сьедаю все байты только для теста
+            case HeaderState.HEADER_NAME:
+                counter += 1
+            case HeaderState.HEADER_VALUE if payload[counter]==13:
+                offset_table.insert(next_offset_id, counter)
+                next_offset_id += 1
+                state = HeaderState.EXPECT_CLRF
+                counter += 1
+            case HeaderState.HEADER_VALUE:
+                counter += 1
+            case HeaderState.SUCCESS:
+                break
             case _:
-                counter +=1
+                HeaderState.ERROR
+                break
 
-    return offset_table
+    return offset_table, state
 
 
 payload =  b"POST /api/data HTTP/1.1\r\n"
@@ -58,5 +86,6 @@ raw_get_request = (
     b"\r\n"
 )
 
-table = parse_req_header(payload)
+table, state = parse_req_header(raw_get_request)
 print(table)
+print(state)
