@@ -77,15 +77,3 @@ def parse_req_header(payload):
     return offset_table, state
 
 
-payload =  b"POST /api/data HTTP/1.1\r\n"
-raw_get_request = (
-    b"GET /api/v1/status HTTP/1.1\r\n"
-    b"Host: localhost:8080\r\n"
-    b"User-Agent: SclerotixClient/1.0\r\n"
-    b"Accept: */*\r\n"
-    b"\r\n"
-)
-
-table, state = parse_req_header(raw_get_request)
-print(table)
-print(state)
