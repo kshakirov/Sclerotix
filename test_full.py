@@ -20,8 +20,12 @@ def analyze_headers(req, table):
 
 def process_request(buffer, buffer_pointer, arena, arena_pointer,state, in_put, current_value):
     table, state = parse_req_header(buffer)
+    buffer_pointer = table[len(table) -1] + 2
     print(raw_get_request[(table[len(table) -1] + 2): ])
-    print(state)
+    print("this is the body to process")
+    state,in_put = analyze_headers(buffer, table)
+    state, in_put, buffer_pointer, current_value, arena_pointer= p.run_engine(state, in_put, current_value, buffer, buffer_pointer, arena,arena_pointer)
+
     
     
 
