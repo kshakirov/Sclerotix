@@ -11,7 +11,7 @@ class HeaderState(Enum):
     SUCCESS = 7
     ERROR=8
 
-#пока предполагаем что это все придет одним куском
+
 def parse_req_header(input_fragment, input_offset, offset_table, state, next_offset_id):
     #state =HeaderState.METHOD
     #offset_table = array('i') # на время только
