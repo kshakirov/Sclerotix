@@ -72,6 +72,7 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 break
             case _:
                 HeaderState.ERROR
+                state= HeaderState.ERROR
                 break
 
     return input_offset + counter, offset_table, state, next_offset_id
