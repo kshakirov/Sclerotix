@@ -7,7 +7,7 @@ class HeaderState(Enum):
     REQVERSION=3
     HEADER_NAME=4
     HEADER_VALUE=5
-    EXPECT_CLRF=6
+    EXPECT_CRLF=6
     SUCCESS = 7
     ERROR=8
 
@@ -40,10 +40,10 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
             case HeaderState.REQVERSION if input_fragment[counter]==13:
                  offset_table.insert(5,counter + input_offset)
                  counter+=1
-                 state=HeaderState.EXPECT_CLRF
+                 state=HeaderState.EXPECT_CRLF
             case HeaderState.REQVERSION:
                 counter+=1
-            case HeaderState.EXPECT_CLRF if input_fragment[counter]==10:
+            case HeaderState.EXPECT_CRLF if input_fragment[counter]==10:
                  offset_table.insert(next_offset_id, counter + 1 + input_offset)
                  counter+=1
                  next_offset_id += 1
@@ -64,7 +64,7 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
             case HeaderState.HEADER_VALUE if input_fragment[counter]==13:
                 offset_table.insert(next_offset_id, counter + input_offset)
                 next_offset_id += 1
-                state = HeaderState.EXPECT_CLRF
+                state = HeaderState.EXPECT_CRLF
                 counter += 1
             case HeaderState.HEADER_VALUE:
                 counter += 1
