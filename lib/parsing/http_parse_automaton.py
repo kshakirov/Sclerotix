@@ -138,7 +138,14 @@ def next_state(current_state, current_input, current_values):
 # это операционный автомат он на вход получает сигнал начальный или вообще он запускается без сигнала
 #потоуму что он запускается только с сигналом чтение заголовков 
 # но пока временно для тестирования у буду передавть сюда состояиния
-def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer):
+def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabled=False):
+    if __debug__:
+        trace = (
+            lambda msg: print(f"[body-parse-automaton] {msg}")
+            if trace_enabled
+            else None
+        )
+
 
     buffer_pointer = buffer_ptr
     state = s
@@ -151,8 +158,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer):
     while  counter < 32:
         counter +=1 # времено
 
-
-        print(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
+        trace(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
             case State.PARSE_HEADERS:
                 pass
@@ -167,6 +173,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer):
                 return state,in_put, buffer_pointer, in_value, arena_pointer
 
             case State.EXPECT_CHUNK_SIZE :
+                
                 print(f"run_engine: state  is EXPECT_CHUNK_SIZE: in_put is {in_put} in_value is {in_value} ")
                 in_progress, state, in_put, in_value, buffer_pointer  = read_chunk_size(buffer, buffer_pointer, in_value)
                 if in_progress:

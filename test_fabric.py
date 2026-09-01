@@ -19,7 +19,6 @@ def make_streaming_request_parser():
       input_buffer = bytearray()
       input_offset = 0
       body_parser_state = p.State.EXPECT_CHUNK_SIZE
-      input_offset =0
       body_signal = p.NetworkInput.CHUNK_DATA_EMPTY
       body_current_value=0
       arena = bytearray(32)
@@ -48,13 +47,11 @@ def make_streaming_request_parser():
 #                  return ParserResult.HEADER_PARSING_FINISHED, None
               else:
                   return ParserResult.HEADER_PARSING_NEED_MORE_DATA, None
-          else:
-              phase = Phase.BODY
 
           if phase == Phase.BODY:
 
               body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
-                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset
+                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
     )
               match body_parser_state:
                   case p.State.SUCCESS:
