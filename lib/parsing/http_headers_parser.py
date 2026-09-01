@@ -8,6 +8,7 @@ class HeaderState(Enum):
     HEADER_NAME=4
     HEADER_VALUE=5
     EXPECT_CRLF=6
+    EXPECT_END_LF=9
     SUCCESS = 7
     ERROR=8
 
@@ -55,10 +56,14 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  next_offset_id += 1
                  state = HeaderState.HEADER_VALUE
                  counter += 1
-            case HeaderState.HEADER_NAME if input_fragment[counter] == 10:
+            case HeaderState.HEADER_NAME if input_fragment[counter] == 13:
                 counter += 1
-                state= HeaderState.SUCCESS
+                state= HeaderState.EXPECT_END_LF
                 #пока не сьедаю все байты только для теста
+            case HeaderState.EXPECT_END_LF if input_fragment[counter]==10:
+                counter += 1
+                state=HeaderState.SUCCESS
+                
             case HeaderState.HEADER_NAME:
                 counter += 1
             case HeaderState.HEADER_VALUE if input_fragment[counter]==13:

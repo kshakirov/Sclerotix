@@ -157,8 +157,8 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
     counter = 0
     while  counter < 32:
         counter +=1 # времено
-
-        trace(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
+        if __debug__ and trace_enabled:
+            trace(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
         match state:
             case State.PARSE_HEADERS:
                 pass

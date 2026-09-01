@@ -44,8 +44,10 @@ def make_streaming_request_parser():
               input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
               if header_parser_state == hp.HeaderState.SUCCESS:
                   phase = Phase.BODY
+                  print(f"Success")
 #                  return ParserResult.HEADER_PARSING_FINISHED, None
               else:
+                  print(header_parser_state)
                   return ParserResult.HEADER_PARSING_NEED_MORE_DATA, None
 
           if phase == Phase.BODY:
@@ -70,6 +72,8 @@ for byte in RAW_STREAM:
     result,arena = feed(bytes([byte]))
     if result == ParserResult.HEADER_PARSING_FINISHED:
         print(result)
+    else:
+        print(f"Wrong: {result}")
         
 
 print(arena)
