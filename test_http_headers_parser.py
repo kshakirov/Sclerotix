@@ -28,22 +28,45 @@ raw_get_request = (
 for b in raw_get_request:
       input_offset, offset_table,state, next_offset_id = parse_req_header([b],input_offset, offset_table,state, next_offset_id)
 
-print(input_offset, offset_table,state, next_offset_id)
+#print(input_offset, offset_table,state, next_offset_id)
+
+def cmp_ascii_one_by_one(b_template, b_candidate):
+      if b_template == b_candidate:
+            return True
+      else:
+            if b_template < b_candidate:
+                  if b_template + 32 == b_candidate:
+                        return True
+
+            return False
+def cmp_header_names(h1, h2):
+      if len(h1) != len(h2):
+            return False
+      else:
+            for i in range(len(h1)):
+                  if not cmp_ascii_one_by_one(h1[i],h2[i]):
+                        return False
+            return True
+      
 
 def get_headers(offset_table, payload, template):
       p = payload
-      #maybe view instead of slice
-      ot = offset_table[2:]
+      ot = memoryview(offset_table)[2:]
       for i in range(floor(len(ot) /4)):
             if(i >0):
                   r = i*4
-                  print(p[ot[r]:ot[r + 1]] , p[ot[r + 2]:ot[r + 3]] )
-                  if(template == p[ot[r]:ot[r + 1]]):
+                  #print(p[ot[r]:ot[r + 1]] , p[ot[r + 2]:ot[r + 3]] )
+                  if cmp_header_names(template, p[ot[r]:ot[r + 1]]):
                         return p[ot[r + 2]:ot[r + 3]]
+
       return False
 
 encoding = get_headers(offset_table, raw_get_request, b"Transfer-Encoding")
 print(encoding)
+
+encoding = get_headers(offset_table, raw_get_request, b"TrAnsfer-EncoDing")
+print(encoding)
+
 
 content_length = get_headers(offset_table, raw_get_request, b"Content-Length")
 print(content_length)
