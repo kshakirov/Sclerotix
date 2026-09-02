@@ -14,7 +14,7 @@ class ParserResult(Enum):
     
 payload =  b"POST /api/data HTTP/1.1\r\n"
 #RAW_STREAM = b"4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
-RAW_STREAM = b"POST /api/data HTTP/1.1\r\n\r\n4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
+RAW_STREAM = b"POST /api/data HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
 def make_streaming_request_parser():
       input_buffer = bytearray()
       input_offset = 0
@@ -43,8 +43,19 @@ def make_streaming_request_parser():
 
               input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
               if header_parser_state == hp.HeaderState.SUCCESS:
-                  phase = Phase.BODY
-                  print(f"Success")
+                  h_start, h_end = hp.get_headers(offset_table,input_buffer,b"transfer-encoding")# later change to constant
+                  if h_start and h_end:
+                      body_parser_state = p.State.EXPECT_CHUNK_SIZE
+                      phase = Phase.BODY
+                      print(f"Success")
+                  h_start, h_end = hp.get_headers(offset_table,input_buffer,b"content-length")# later change to constant
+                  if h_start and h_end:
+                      body_parser_state = p.State.READ_CHUNK_DATA# dont' remember which must be
+                      body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
+                      body_current_value = 0 # value from header must be parsed here
+                      phase = Phase.BODY
+                      print(f"Success")
+                   # here comes checking for empty body later         
 #                  return ParserResult.HEADER_PARSING_FINISHED, None
               else:
                   print(header_parser_state)

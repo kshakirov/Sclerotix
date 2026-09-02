@@ -1,5 +1,7 @@
 from enum import Enum
 from array import array
+from math import floor,ceil
+
 
 class HeaderState(Enum):
     METHOD=1
@@ -83,3 +85,32 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
     return input_offset + counter, offset_table, state, next_offset_id
 
 
+def cmp_ascii_one_by_one(b_template, b_candidate):
+      if b_template == b_candidate:
+            return True
+      else:
+            if b_template > b_candidate:
+                  if b_template - 32 == b_candidate:
+                        return True
+
+            return False
+def cmp_header_names(template, buffer, start, end):
+      if len(template) != end - start:
+            return False
+      else:
+            for i in range(len(template)):
+                  if not cmp_ascii_one_by_one(template[i],buffer[start + i]):
+                        return False
+            return True
+      
+
+def get_headers(offset_table, payload, template):
+      p = payload
+      ot = offset_table
+      base = 6 
+      for i in range(floor((len(ot) -  base) /4)):
+            r = base + i*4
+            if cmp_header_names(template, p, ot[r], ot[r + 1]):
+                  return ot[r + 2], ot[r + 3]
+                  
+      return None, None
