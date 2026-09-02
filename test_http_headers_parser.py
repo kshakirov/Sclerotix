@@ -52,12 +52,14 @@ def cmp_header_names(template, buffer, start, end):
 def get_headers(offset_table, payload, template):
       p = payload
       ot = memoryview(offset_table)[2:]
-      for i in range(floor(len(ot) /4)):
-            if(i >0):
-                  r = i*4
-                  if cmp_header_names(template, p, ot[r], ot[r + 1]):
-                        return ot[r + 2], ot[r + 3]
-
+      ot = offset_table
+      base = 6 
+      for i in range(floor((len(ot) -  base) /4)):
+            r = base + i*4
+                  
+            if cmp_header_names(template, p, ot[r], ot[r + 1]):
+                  return ot[r + 2], ot[r + 3]
+                  
       return None, None
 
 start,end = get_headers(offset_table, raw_get_request, b"Transfer-Encoding")
