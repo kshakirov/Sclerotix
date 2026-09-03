@@ -112,3 +112,35 @@ def get_headers(offset_table, payload, template):
             return offset_table[r + 2], offset_table[r + 3]
                   
     return None, None
+
+def is_transfer_encoding(offset_table, payload):
+    template = b"transfer-encoding"
+    template_value = b"chunked"
+    s,e = get_headers(offset_table, payload, template)
+    print(s,e)
+    if not  s or not e:
+        return False
+    else:
+        length = e - s
+        if length < len(template_value):
+            return False
+        if length == len(template_value):
+            for i in range(length):
+                if template_value[i] != payload[s + i]:
+                    return False
+            return True
+        else: # maybe spaces
+
+            real_value_start = s
+            for i in range(length):
+                if payload[s + i] != 32:
+                    real_value_start = s + i
+                    break
+            left_length = e - real_value_start
+            if left_length < len(template_value):
+                return False
+            else:
+                for i in range(len(template_value)):
+                    if not cmp_ascii_one_by_one(template_value[i],payload[real_value_start + i]):
+                        return False
+                return True
