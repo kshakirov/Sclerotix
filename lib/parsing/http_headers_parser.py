@@ -144,3 +144,80 @@ def is_transfer_encoding(offset_table, payload):
                     if not cmp_ascii_one_by_one(template_value[i],payload[real_value_start + i]):
                         return False
                 return True
+
+def is_hex(candidate):
+    numbers_start = 47
+    numbers_end = 58
+    hex_start = 63
+    hex_end = 71
+    # + 32 too
+    if candidate > numbers_start and candidate < numbers_end:
+        return True, candidate - 48
+    elif candidate > hex_start and candidate < hex_end:
+        hex_val = 0
+        match candidate:
+            case 70:
+                hex_val = 15
+
+            case 69:
+                hex_val = 14
+
+            case 68:
+                hex_val = 13
+
+            case 67:
+                hex_val = 12
+
+            case 66:
+                hex_val = 11
+
+            case 65:
+                hex_val = 10
+
+
+        return True, hex_val
+    elif candidate > hex_start + 32  and candidate < hex_end + 32:
+        return True, 10 # ignoring for the moment
+    else:
+        return False, None
+
+
+def get_content_length_if_content_length(offset_table, payload):
+    
+    template = b"content-length"
+
+    s,e = get_headers(offset_table, payload, template)
+    print(s,e)
+    if not  s or not e:
+        return False
+    else:
+        length = e - s
+        #ignoring spaces only after numbers for the moment 32 
+        spaces = True
+        after_spaces_index = 0
+        length_without_spaces = length
+        result = 0
+
+        for i in range(length):
+            if payload[i + s] == 32:
+                if spaces:
+                    after_spaces_index = i
+                    length_without_spaces -= 1
+                    pass
+                else:
+
+                    return False
+            else:
+                spaces = False
+                h, value  =  is_hex(payload[i +s])
+                if h:
+
+                    result += value  * 16 ** (length_without_spaces -1)
+                    print(payload[i + s], value, length_without_spaces, result)
+                    length_without_spaces -= 1
+                else:
+                    print("here")
+                    return False
+                    
+        return result
+            

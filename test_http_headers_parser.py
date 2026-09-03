@@ -1,4 +1,4 @@
-from lib.parsing.http_headers_parser import parse_req_header, HeaderState, cmp_header_names,cmp_ascii_one_by_one, get_headers, is_transfer_encoding
+from lib.parsing.http_headers_parser import parse_req_header, HeaderState, cmp_header_names,cmp_ascii_one_by_one, get_headers, is_transfer_encoding,get_content_length_if_content_length
 from array import array
 from math import floor,ceil
 
@@ -25,14 +25,17 @@ raw_get_request = (
 
 RAW_STREAM = (
       b"POST /api/data HTTP/1.1\r\n"
-      b"Content-Length: 9\r\n"
+      b"Content-Length: A1\r\n"
       b"\r\n"
       b"Wikipedia"
   )
 
 
 
-for b in raw_get_request:
+# for b in raw_get_request:
+#       input_offset, offset_table,state, next_offset_id = parse_req_header([b],input_offset, offset_table,state, next_offset_id)
+
+for b in RAW_STREAM:
       input_offset, offset_table,state, next_offset_id = parse_req_header([b],input_offset, offset_table,state, next_offset_id)
 
 
@@ -47,5 +50,6 @@ for b in raw_get_request:
 # start,end = get_headers(offset_table, raw_get_request, b"content-length")
 # print(start,end)
 
-r = is_transfer_encoding(offset_table,raw_get_request)
+#r = is_transfer_encoding(offset_table,raw_get_request)
+r = get_content_length_if_content_length(offset_table,RAW_STREAM)
 print(r)
