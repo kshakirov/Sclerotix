@@ -105,12 +105,10 @@ def cmp_header_names(template, buffer, start, end):
       
 
 def get_headers(offset_table, payload, template):
-      p = payload
-      ot = offset_table
-      base = 6 
-      for i in range(floor((len(ot) -  base) /4)):
-            r = base + i*4
-            if cmp_header_names(template, p, ot[r], ot[r + 1]):
-                  return ot[r + 2], ot[r + 3]
+    base = 6 
+    for i in range(floor((len(offset_table) -  base) /4)):
+        r = base + i*4
+        if cmp_header_names(template, payload, offset_table[r], offset_table[r + 1]):
+            return offset_table[r + 2], offset_table[r + 3]
                   
-      return None, None
+    return None, None
