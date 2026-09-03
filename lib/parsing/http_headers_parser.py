@@ -181,6 +181,15 @@ def is_hex(candidate):
     else:
         return False, None
 
+def is_decimal(candidate):
+    numbers_start = 47
+    numbers_end = 58
+
+    if candidate > numbers_start and candidate < numbers_end:
+        return True, candidate - 48
+    else:
+        return False, None
+
 
 def get_content_length_if_content_length(offset_table, payload):
     
@@ -209,10 +218,10 @@ def get_content_length_if_content_length(offset_table, payload):
                     return False
             else:
                 spaces = False
-                h, value  =  is_hex(payload[i +s])
+                h, value  =  is_decimal(payload[i +s])
                 if h:
 
-                    result += value  * 16 ** (length_without_spaces -1)
+                    result += value  * 10 ** (length_without_spaces -1)
                     print(payload[i + s], value, length_without_spaces, result)
                     length_without_spaces -= 1
                 else:

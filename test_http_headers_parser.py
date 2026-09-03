@@ -25,7 +25,7 @@ raw_get_request = (
 
 RAW_STREAM = (
       b"POST /api/data HTTP/1.1\r\n"
-      b"Content-Length: A1\r\n"
+      b"Content-Length: 123\r\n"
       b"\r\n"
       b"Wikipedia"
   )
