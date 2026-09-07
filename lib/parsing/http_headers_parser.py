@@ -117,7 +117,7 @@ def is_transfer_encoding(offset_table, payload):
     template = b"transfer-encoding"
     template_value = b"chunked"
     s,e = get_headers(offset_table, payload, template)
-    print(s,e)
+    #print(s,e)
     if not  s or not e:
         return False
     else:
@@ -196,7 +196,7 @@ def get_content_length_if_content_length(offset_table, payload):
     template = b"content-length"
 
     s,e = get_headers(offset_table, payload, template)
-    print(s,e)
+    #print(s,e)
     if not  s or not e:
         return False
     else:
@@ -222,10 +222,10 @@ def get_content_length_if_content_length(offset_table, payload):
                 if h:
 
                     result += value  * 10 ** (length_without_spaces -1)
-                    print(payload[i + s], value, length_without_spaces, result)
+                    #print(payload[i + s], value, length_without_spaces, result)
                     length_without_spaces -= 1
                 else:
-                    print("here")
+                    #print("here")
                     return False
                     
         return result
