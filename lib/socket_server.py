@@ -1,6 +1,7 @@
 import socket
 import lib.utils.utils as u
 import lib.parsing.http_parse_automaton as robot
+import lib.parsing.factory as f
 import asyncio
 
 global tasks
@@ -42,22 +43,17 @@ def handle_method_and_url():
 
     
 async def handle_req(so, routes, loop):
-        print("handle")
-        data  = await loop.sock_recv(so, 64000)
-        status, req_data = u.parse_http_req(bytearray(data))
-        print(req_data)
-        print(status)
-        for route in routes:
-            print(route['route'])
-            if(route['route'] == status['url']):
-                print("Matches")
-                route['req'](req_data, None)
-            else:
-                print("no")
-                
+        print("starting")
+        feed = f.make_streaming_request_parser()
+        status = f.ParserResult.NEED_MORE_DATA
+        while status == f.ParserResult.NEED_MORE_DATA:
+            data  = await loop.sock_recv(so, 1028)
+            status,arena = feed(bytearray(data))
+            print(status)
         sent = await loop.sock_sendall(so, bytes(response,'utf8'))
-        print("here")
+        print("finishing ")
         so.close()
+
 
     
 async def accept_connections_and_create_task(so,loop,routes, tasks):

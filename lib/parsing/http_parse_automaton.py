@@ -155,7 +155,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
     #print(f"http_data is {buffer}")
 
     counter = 0
-    while  counter < 32:
+    while  counter < len(buffer):
         counter +=1 # времено
         if __debug__ and trace_enabled:
             trace(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
