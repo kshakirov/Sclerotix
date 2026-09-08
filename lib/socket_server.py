@@ -5,20 +5,10 @@ import lib.parsing.factory as f
 import asyncio
 
 global tasks
-response = """ HTTP/1.1 200 OK
-Date: Tue, 23 Jun 2026 08:45:00 GMT
-Server: Apache/2.4.41 (Ubuntu)
-Content-Type: text/html; charset=UTF-8
-Content-Length: 124
-Connection: close
 
-<!DOCTYPE html>
-<html>
-<head><title>Success</title></head>
-<body><h1>Your request was successfully completed!</h1></body>
-</html>
+response = "HTTP/1.1 200 OK\r\n\r\n"
+error_response = "HTTP/1.1 500 Internal Server Error\r\n\r\n"
 
-"""
 def get_if_exception(task):
     # Проверяем, есть ли исключение
     try:
@@ -65,14 +55,20 @@ async def handle_req(so, routes, loop):
                     print(f"No More data")
                     break
                 status,arena = feed(data)
+                if status == f.ParserResult.ERROR:
+                    break
                 print(status)
-            sent = await loop.sock_sendall(so, bytes(response,'utf8'))
-            print("finishing ")
+            if status == f.ParserResult.BODY_PARSING_FINISHED:
+                sent = await loop.sock_sendall(so, bytes(response,'utf8'))
+                print("finishing ")
+
+            else:
+                sent = await loop.sock_sendall(so, bytes(error_response,'utf8'))
             so.close()
         except Exception as  e:
             print(f"Exception is {e}")
             #should be error msg
-            sent = await loop.sock_sendall(so, bytes(response,'utf8'))
+            sent = await loop.sock_sendall(so, bytes(error_response,'utf8'))
         finally:
             so.close()
 

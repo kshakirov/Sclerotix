@@ -11,6 +11,7 @@ class ParserResult(Enum):
     BODY_PARSING_FINISHED=2
     HEADER_PARSING_FINISHED=3
     HEADER_PARSING_NEED_MORE_DATA=4
+    ERROR=5
     
 
 def make_streaming_request_parser():
@@ -60,7 +61,7 @@ def make_streaming_request_parser():
 #                  return ParserResult.HEADER_PARSING_FINISHED, None
               elif header_parser_state == hp.HeaderState.ERROR:
                   #do exit for later left
-                  pass
+                  return ParserResult.ERROR, None
               
               else:
                   #print(header_parser_state)
@@ -77,7 +78,7 @@ def make_streaming_request_parser():
                   case p.State.SUCCESS:
                       return ParserResult.BODY_PARSING_FINISHED, arena[:arena_offset]
                   case p.State.ERROR:
-                      return ParserResult.BODY_PARSING_FINISHED, None
+                      return ParserResult.ERROR, None
                   case _ :
                       return ParserResult.NEED_MORE_DATA, arena
               
