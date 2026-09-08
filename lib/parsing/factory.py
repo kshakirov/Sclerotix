@@ -46,6 +46,7 @@ def make_streaming_request_parser():
                   if h_start and h_end:
                       body_parser_state = p.State.EXPECT_CHUNK_SIZE
                       phase = Phase.BODY
+                      
                       #print(f"Success")
                   h_start, h_end = hp.get_headers(offset_table,input_buffer,b"content-length")# later change to constant
                   if h_start and h_end:
@@ -63,10 +64,11 @@ def make_streaming_request_parser():
               
               else:
                   #print(header_parser_state)
-                  return ParserResult.HEADER_PARSING_NEED_MORE_DATA, None
+                  return ParserResult.NEED_MORE_DATA, None
 
           if phase == Phase.BODY:
-
+              if len(input_buffer) > len(arena):
+                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
               body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
                   body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
     )

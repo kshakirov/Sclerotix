@@ -2,6 +2,7 @@
 
 import requests
 import json
+import random
 
 # Данные, которые отправляем
 data = { "name" : [i * 10 for i in range(4096)]}
@@ -32,3 +33,15 @@ response = requests.post(
 
 
 #response = requests.post('http://localhost:8090/no/2', json.dumps({"payload": [i * 10 for i in range(10000)]}))
+def generate_chunks():
+    for i in range(10):
+        chunk = bytearray(1028)
+        for y in range(1028):
+            chunk[y]= random.randint(0,255)
+        yield chunk
+        
+response = requests.post(
+    'http://localhost:8090/generator/1',
+
+    data=generate_chunks()  # Важно: передаем байты, не json!
+)

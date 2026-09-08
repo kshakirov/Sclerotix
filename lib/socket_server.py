@@ -61,6 +61,9 @@ async def handle_req(so, routes, loop):
             status = f.ParserResult.NEED_MORE_DATA
             while status == f.ParserResult.NEED_MORE_DATA:
                 data  = await loop.sock_recv(so, 1028)
+                if data == b"":
+                    print(f"No More data")
+                    break
                 status,arena = feed(data)
                 print(status)
             sent = await loop.sock_sendall(so, bytes(response,'utf8'))
