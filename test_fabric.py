@@ -83,7 +83,7 @@ RAW_STREAM = b"POST /api/data HTTP/1.1\r\nTransfer-Encoding: chunked\r\n\r\n4\r\
 
 RAW_STREAM_CONST = (
       b"POST /api/data HTTP/1.1\r\n"
-      b"Content-Length: 123\r\n"
+      b"Content-Length: 9\r\n"
       b"\r\n"
       b"Wikipedia"
   )
@@ -93,12 +93,13 @@ feed = make_streaming_request_parser()
 
 arena = None
 for byte in RAW_STREAM_CONST:
+#for byte in RAW_STREAM:
     result,arena = feed(bytes([byte]))
     if result == ParserResult.HEADER_PARSING_FINISHED:
-        pass
+        print(result)
     else:
         #print(f"Wrong: {result}")
         pass
         
 
-print(arena)
+print(result, arena)

@@ -155,7 +155,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
     #print(f"http_data is {buffer}")
 
     counter = 0
-    while  counter < len(buffer):
+    while  counter >= 0:
         counter +=1 # времено
         if __debug__ and trace_enabled:
             trace(f"run_engine: Entering Loop: state: {state}, in_put: {in_put}, in_value: {in_value}")
@@ -255,10 +255,15 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
             
             case State.READ_CHUNK_DATA if in_put == NetworkInput.READING_FIXED_DATA:
                 #print("run_engine: Reading chunks of fixed length")
-                bytes_left_to_read, arena_pointer = read_chunk_fixed_length(in_value, buffer,buffer_pointer, arena, arena_pointer)
-                state = State.READ_CHUNK_DATA
-                in_put = NetworkInput.READING_FIXED_DATA
-                in_value = bytes_left_to_read
+                if __debug__ and trace_enabled:
+                    trace(f"run_engine: Reading chunks of fixed length: state: {state}, in_put: {in_put}, in_value: {in_value}")
+                in_progress, bytes_left_to_read, arena_pointer, buffer_pointer = read_chunk_fixed_length(in_value, buffer,buffer_pointer, arena, arena_pointer)
+                if in_progress:
+                    return State.READ_CHUNK_DATA, NetworkInput.READING_FIXED_DATA,buffer_pointer, bytes_left_to_read, arena_pointer
+                else:
+                    state = State.READ_CHUNK_DATA
+                    in_put = NetworkInput.READING_FIXED_DATA
+                    in_value = 0
                 
                 
                 pass
@@ -275,17 +280,25 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
 
 
 def read_chunk_fixed_length(in_value, buffer, buffer_pointer, arena, arena_pointer):
-    #print(f"\t\tread_chunk_fixed_length in_value is {in_value}  buffer length is {len(buffer)}, buffer pointer is {buffer_pointer}")
-    buffer_pointer = len(buffer) - in_value
-    if(in_value > 0):
-        #пока эмуллирует чтение затем добавим реальные
-        # специально подробно расписываю
-        arena[arena_pointer] = buffer[buffer_pointer]
-        #print(f"\t\tread _chunk_fixed_length: read buffer[{buffer_pointer}] = {buffer[buffer_pointer]}")
-        arena_pointer += 1
-        return in_value - 1, arena_pointer
+    print(f"\t\tread_chunk_fixed_length in_value is {in_value}  buffer length is {len(buffer)}, buffer pointer is {buffer_pointer}")
+    if buffer_pointer < len(buffer):
+        while buffer_pointer < len(buffer) and in_value > 0:
+            # специально подробно расписываю
+            arena[arena_pointer] = buffer[buffer_pointer]
+            #print(f"\t\tread _chunk_fixed_length: read buffer[{buffer_pointer}] = {buffer[buffer_pointer]}")
+            buffer_pointer += 1
+            arena_pointer += 1
+            in_value -= 1
+
+        if in_value > 0:
+            return True, in_value, arena_pointer, buffer_pointer
+        else:
+            print(f"00000 {in_value}")
+            return False, in_value, arena_pointer, buffer_pointer
     else:
-        return in_value, arena_pointer
+        return True, in_value, arena_pointer, buffer_pointer
+
+        
 
 def read_chunk_size(buffer,buffer_pointer, current_value):
     current_value = current_value or ""

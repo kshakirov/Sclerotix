@@ -37,6 +37,7 @@ def make_streaming_request_parser():
           nonlocal next_offset_id
           nonlocal header_parser_state
           nonlocal offset_table
+          nonlocal arena
           if phase == Phase.HEADERS:
 
               input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
@@ -48,11 +49,12 @@ def make_streaming_request_parser():
                       #print(f"Success")
                   h_start, h_end = hp.get_headers(offset_table,input_buffer,b"content-length")# later change to constant
                   if h_start and h_end:
-                      body_parser_state = p.State.READ_CHUNK_DATA# dont' remember which must be
+                      body_parser_state = p.State.PARSE_HEADERS# dont' remember which must be
                       body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
                       body_current_value = hp.get_content_length_if_content_length(offset_table, input_buffer) # value from header must be parsed here
                       phase = Phase.BODY
                       print(f"Success {body_current_value}")
+                      arena = bytearray(body_current_value)
                    # here comes checking for empty body later         
 #                  return ParserResult.HEADER_PARSING_FINISHED, None
               elif header_parser_state == hp.HeaderState.ERROR:
@@ -68,6 +70,7 @@ def make_streaming_request_parser():
               body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
                   body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
     )
+              print(f"FFFFF {body_parser_state}")
               match body_parser_state:
                   case p.State.SUCCESS:
                       return ParserResult.BODY_PARSING_FINISHED, arena[:arena_offset]
