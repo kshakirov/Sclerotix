@@ -63,13 +63,14 @@ async def handle_req(so, routes, loop):
                 data  = await loop.sock_recv(so, 1028)
                 status,arena = feed(data)
                 print(status)
-                sent = await loop.sock_sendall(so, bytes(response,'utf8'))
-                print("finishing ")
-                so.close()
+            sent = await loop.sock_sendall(so, bytes(response,'utf8'))
+            print("finishing ")
+            so.close()
         except Exception as  e:
             print(f"Exception is {e}")
             #should be error msg
             sent = await loop.sock_sendall(so, bytes(response,'utf8'))
+        finally:
             so.close()
 
 

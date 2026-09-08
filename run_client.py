@@ -4,7 +4,7 @@ import requests
 import json
 
 # Данные, которые отправляем
-data = { "name" : [i for i in range(10)]}
+data = { "name" : [i * 10 for i in range(4096)]}
 
 
 # Преобразуем в JSON-строку
