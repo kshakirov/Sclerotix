@@ -12,7 +12,9 @@ class ParserResult(Enum):
     HEADER_PARSING_FINISHED=3
     HEADER_PARSING_NEED_MORE_DATA=4
     ERROR=5
-    
+class ContentHeader(Enum):
+    CONTENT_LENGTH=b"content-length"
+    TRANSFER_ENCODING=b"transfer-encoding"
 
 def make_streaming_request_parser():
       input_buffer = bytearray()
@@ -42,23 +44,34 @@ def make_streaming_request_parser():
           if phase == Phase.HEADERS:
 
               input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
+              found_header = None
               if header_parser_state == hp.HeaderState.SUCCESS:
-                  h_start, h_end = hp.get_headers(offset_table,input_buffer,b"transfer-encoding")# later change to constant
+                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
                   if h_start and h_end:
                       body_parser_state = p.State.EXPECT_CHUNK_SIZE
                       phase = Phase.BODY
+                      found_header = ContentHeader.TRANSFER_ENCODING
                       
                       #print(f"Success")
-                  h_start, h_end = hp.get_headers(offset_table,input_buffer,b"content-length")# later change to constant
+                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
                   if h_start and h_end:
                       body_parser_state = p.State.PARSE_HEADERS# dont' remember which must be
                       body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
                       body_current_value = hp.get_content_length_if_content_length(offset_table, input_buffer) # value from header must be parsed here
                       phase = Phase.BODY
-                      print(f"Success {body_current_value}")
+
+                      if found_header == ContentHeader.TRANSFER_ENCODING:
+                          return ParserResult.ERROR, None
+                      else:
+                          found_header= ContentHeader.CONTENT_LENGTH
+
                       arena = bytearray(body_current_value)
                    # here comes checking for empty body later         
-#                  return ParserResult.HEADER_PARSING_FINISHED, None
+
+                  if not found_header:
+                      #means no body interesting for us
+                      return ParserResult.BODY_PARSING_FINISHED, None 
+                  
               elif header_parser_state == hp.HeaderState.ERROR:
                   #do exit for later left
                   return ParserResult.ERROR, None
