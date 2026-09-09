@@ -5,14 +5,7 @@ from math import floor,ceil
 payload =  b"POST /api/data HTTP/1.1\r\n"
 payload_cutA =  b"POST /api/dat"
 payload_cutB =  b"a HTTP/1.1\r\n"
-
-state =HeaderState.METHOD
-offset_table = array('i') # на время только
-next_offset_id =6
-input_offset = 0
-raw_get_request = b"POST /api/v1/status HTTP/1.1\r\nHost: localhost:8080\r\nUser-Agent: SclerotixClient/1.0\r\nTransfer-Encoding: chunked\r\nAccept: */*\r\n\r\n4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
-
-
+raw_get_request_wrong = b"POST /api/v1/status HTTP/1.1\r\nHost: localhost:8080\r\nUser-Agent: SclerotixClient/1.0\r\nTransfer-Encoding: chunkeddd\r\nAccept: */*\r\n\r\n4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
 raw_get_request = (
     b"POST /api/v1/status HTTP/1.1\r\n"
     b"Host: localhost:8080\r\n"
@@ -22,7 +15,6 @@ raw_get_request = (
     b"\r\n"
     b"4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
 )
-
 RAW_STREAM = (
       b"POST /api/data HTTP/1.1\r\n"
       b"Content-Length: 123\r\n"
@@ -32,24 +24,22 @@ RAW_STREAM = (
 
 
 
-# for b in raw_get_request:
-#       input_offset, offset_table,state, next_offset_id = parse_req_header([b],input_offset, offset_table,state, next_offset_id)
 
-for b in RAW_STREAM:
-      input_offset, offset_table,state, next_offset_id = parse_req_header([b],input_offset, offset_table,state, next_offset_id)
-
-
-
-# start,end = get_headers(offset_table, raw_get_request, b"transfer-encoding")
-# print(start,end)
-
-# start,end = get_headers(offset_table, raw_get_request, b"transfer-encoding")
-# print(start,end)
+def test_parse_header(payload):
+      state =HeaderState.METHOD
+      offset_table = array('i') # на время только
+      next_offset_id =6
+      input_offset = 0
+      for b in payload:
+            input_offset, offset_table,state, next_offset_id = parse_req_header([b],input_offset, offset_table,state, next_offset_id)
+      return offset_table
 
 
-# start,end = get_headers(offset_table, raw_get_request, b"content-length")
-# print(start,end)
 
-#r = is_transfer_encoding(offset_table,raw_get_request)
-r = get_content_length_if_content_length(offset_table,RAW_STREAM)
-print(r)
+r = is_transfer_encoding(test_parse_header(raw_get_request_wrong),raw_get_request_wrong)
+assert(not r)
+
+r = is_transfer_encoding(test_parse_header(raw_get_request),raw_get_request)
+assert(r)
+r = get_content_length_if_content_length(test_parse_header(RAW_STREAM),RAW_STREAM)
+assert(r==123)

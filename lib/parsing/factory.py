@@ -48,9 +48,12 @@ def make_streaming_request_parser():
               if header_parser_state == hp.HeaderState.SUCCESS:
                   h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
                   if h_start and h_end:
-                      body_parser_state = p.State.EXPECT_CHUNK_SIZE
-                      phase = Phase.BODY
-                      found_header = ContentHeader.TRANSFER_ENCODING
+                      if hp.is_transfer_encoding(offset_table, input_buffer):
+                          body_parser_state = p.State.EXPECT_CHUNK_SIZE
+                          phase = Phase.BODY
+                          found_header = ContentHeader.TRANSFER_ENCODING
+                      else:
+                          return ParserResult.ERROR, None
                       
                       #print(f"Success")
                   h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant

@@ -143,6 +143,8 @@ def is_transfer_encoding(offset_table, payload):
                 for i in range(len(template_value)):
                     if not cmp_ascii_one_by_one(template_value[i],payload[real_value_start + i]):
                         return False
+                if payload[real_value_start + len(template_value)]!= 13:
+                           return False
                 return True
 
 def is_hex(candidate):
