@@ -1,0 +1,104 @@
+from enum import Enum
+from array import array
+import lib.parsing.http_parse_automaton as p
+import lib.parsing.http_headers_parser as hp
+class Phase(Enum):
+    HEADERS=1
+    BODY = 2
+
+class ParserResult(Enum):
+    NEED_MORE_DATA=1
+    BODY_PARSING_FINISHED=2
+    HEADER_PARSING_FINISHED=3
+    HEADER_PARSING_NEED_MORE_DATA=4
+    ERROR=5
+class ContentHeader(Enum):
+    CONTENT_LENGTH=b"content-length"
+    TRANSFER_ENCODING=b"transfer-encoding"
+
+def make_streaming_request_parser():
+      input_buffer = bytearray()
+      input_offset = 0
+      body_parser_state = p.State.EXPECT_CHUNK_SIZE
+      body_signal = p.NetworkInput.CHUNK_DATA_EMPTY
+      body_current_value=0
+      arena = bytearray(32)
+      arena_offset=0
+      phase = Phase.HEADERS
+      offset_table = array("i")
+      header_parser_state=hp.HeaderState.METHOD
+      next_offset_id=6
+
+      def feed(input_fragment):
+          input_buffer.extend(input_fragment)
+          nonlocal input_offset
+          nonlocal body_parser_state
+          nonlocal body_signal
+          nonlocal body_current_value
+          nonlocal arena_offset
+          nonlocal phase
+          nonlocal next_offset_id
+          nonlocal header_parser_state
+          nonlocal offset_table
+          nonlocal arena
+          if phase == Phase.HEADERS:
+
+              input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
+              found_header = None
+              if header_parser_state == hp.HeaderState.SUCCESS:
+                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
+                  if h_start and h_end:
+                      if hp.is_transfer_encoding(offset_table, input_buffer):
+                          body_parser_state = p.State.EXPECT_CHUNK_SIZE
+                          phase = Phase.BODY
+                          found_header = ContentHeader.TRANSFER_ENCODING
+                      else:
+                          return ParserResult.ERROR, None
+                      
+                      #print(f"Success")
+                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
+                  if h_start and h_end:
+                      body_parser_state = p.State.PARSE_HEADERS# dont' remember which must be
+                      body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
+                      body_current_value = hp.get_content_length_if_content_length(offset_table, input_buffer) # value from header must be parsed here
+                      phase = Phase.BODY
+
+                      if found_header == ContentHeader.TRANSFER_ENCODING:
+                          return ParserResult.ERROR, None
+                      else:
+                          found_header= ContentHeader.CONTENT_LENGTH
+
+                      arena = bytearray(body_current_value)
+                   # here comes checking for empty body later         
+
+                  if not found_header:
+                      #means no body interesting for us
+                      return ParserResult.BODY_PARSING_FINISHED, None 
+                  
+              elif header_parser_state == hp.HeaderState.ERROR:
+                  #do exit for later left
+                  return ParserResult.ERROR, None
+              
+              else:
+                  #print(header_parser_state)
+                  return ParserResult.NEED_MORE_DATA, None
+
+          if phase == Phase.BODY:
+              if len(input_buffer) > len(arena):
+                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
+              body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
+                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
+    )
+              print(f"FFFFF {body_parser_state}")
+              match body_parser_state:
+                  case p.State.SUCCESS:
+                      return ParserResult.BODY_PARSING_FINISHED, arena[:arena_offset]
+                  case p.State.ERROR:
+                      return ParserResult.ERROR, None
+                  case _ :
+                      return ParserResult.NEED_MORE_DATA, arena
+              
+
+      return feed
+
+

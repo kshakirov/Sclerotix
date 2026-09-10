@@ -1,0 +1,55 @@
+MODULE main
+VAR
+    -- Алфавит состояний нашего автомата
+    state : { PARSE_HEADERS, EXPECT_CHUNK_SIZE, READ_CHUNK_DATA, EXPECT_CHUNK_CRLF, SUCCESS, ERROR };
+    
+    -- Алфавит внешних сетевых сигналов
+    input : { HEADERS_PARSED_EMPTY, HEADERS_PARSED_CONTENT_LENGTH, HEADERS_PARSED_CHUNKED,
+              CHUNK_SIZE_ZERO, CHUNK_SIZE_GREATER_ZERO,
+              READING_FIXED_DATA, CHUNK_DATA_FLOW, CHUNK_DATA_EMPTY,
+              CRLF_VALID, MALFORMED };
+
+ASSIGN
+    
+    init(state) := PARSE_HEADERS;
+
+    next(state) := case
+    state = SUCCESS : SUCCESS; -- ЖЕСТКАЯ ФИКСАЦИЯ ТЕРМИНАЛА	
+        -- 1. Фаза заголовков
+        state = PARSE_HEADERS & input = HEADERS_PARSED_EMPTY          : SUCCESS;
+        state = PARSE_HEADERS & input = HEADERS_PARSED_CONTENT_LENGTH : READ_CHUNK_DATA;
+        state = PARSE_HEADERS & input = HEADERS_PARSED_CHUNKED        : EXPECT_CHUNK_SIZE;
+
+        -- 2. Фаза ожидания размера чанка (HTTP-глаза)
+        state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_ZERO           : SUCCESS;
+        state = EXPECT_CHUNK_SIZE & input = CHUNK_SIZE_GREATER_ZERO   : READ_CHUNK_DATA;
+        state = EXPECT_CHUNK_SIZE & input = MALFORMED                 : ERROR;
+
+        -- 3. Фаза чтения данных (Слепец)
+        state = READ_CHUNK_DATA & input = READING_FIXED_DATA          : SUCCESS;
+        state = READ_CHUNK_DATA & input = CHUNK_DATA_FLOW             : READ_CHUNK_DATA;
+        state = READ_CHUNK_DATA & input = CHUNK_DATA_EMPTY            : EXPECT_CHUNK_CRLF;
+
+        -- 4. Зачистка хвоста чанка
+        state = EXPECT_CHUNK_CRLF & input = CRLF_VALID                : EXPECT_CHUNK_SIZE;
+        state = EXPECT_CHUNK_CRLF & input = MALFORMED                 : ERROR;
+
+        -- Если прилетел мусор или непредусмотренный сигнал в любом состоянии
+        input = MALFORMED                                             : ERROR;
+        TRUE                                                          : ERROR;
+    esac;
+
+-- =========================================================================
+--  МАТЕМАТИЧЕСКИЕ СПЕЦИФИКАЦИИ ДЛЯ ПРОВЕРКИ (LTL / CTL Формулы)
+-- =========================================================================
+
+-- Свойство 1: Безопасность. Из терминального успеха невозможно упасть в ошибку.
+SPEC AG (state = SUCCESS -> AX (state = SUCCESS))
+
+-- Свойство 2: Живучесть. Если мы успешно прочитали заголовки чанка, мы ОБЯЗАНЫ 
+-- включить режим ожидания размера чанка на следующем шаге.
+SPEC AG (state = PARSE_HEADERS & input = HEADERS_PARSED_CHUNKED -> AX (state = EXPECT_CHUNK_SIZE))
+
+-- Свойство 3: Цикличность. Из режима ожидания CRLF при валидном хвосте мы всегда 
+-- совершаем колебание обратно в EXPECT_CHUNK_SIZE.
+SPEC AG (state = EXPECT_CHUNK_CRLF & input = CRLF_VALID -> AX (state = EXPECT_CHUNK_SIZE))
