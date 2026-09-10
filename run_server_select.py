@@ -99,7 +99,8 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                 print(f" the response to send later {response}")
                 outputs.remove(s)
                 
-                s.send(response)
+                sent_bytes = s.send(response)
+                #here we must check weather all bytes are sent if not repeat in the next iteration
                 s.close()
 
     except KeyboardInterrupt:
