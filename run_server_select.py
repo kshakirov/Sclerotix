@@ -22,7 +22,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
     # Таблица сессий: fd -> session dict (здесь потом будут буферы и feed())
     sessions: Dict[int, Dict[str, Any]] = {}
 
-    # Списки для select
+    # Mножества  для select
     inputs = set() #потом поменяем дорого список
     inputs.add(server_socket)
     outputs = set()
@@ -35,7 +35,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
         outputs.discard(s)
         inputs.discard(s)
         errors.discard(s)
-        del sessions[fd]
+        sessions.pop(fd, None)
         s.close()
 
         
@@ -111,7 +111,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                 fd = s.fileno()
                 print(f" Writeable  on fd={fd}")
                 pending_response = sessions[fd]['response']
-                print(f" Sending  response async {pending_response}")
+                print(f" Sending  response  {pending_response}")
 
                 
                 sent_bytes = s.send(pending_response)
