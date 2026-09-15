@@ -3,11 +3,14 @@ import select
 from typing import Dict, Any
 import lib.parsing.factory as f
 
+def stupid_universal_handler(arena_chunk):
+    print("I am a stupid handler for arena chunks")
+    print(f"here goes the arena fragment {arena_chunk}")
 
-
+handlers = {'universal_hanlder': stupid_universal_handler}
     
 
-def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
+def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers):
     response = b"HTTP/1.1 200 OK\r\n\r\n"
     RESPONSE_VIEW = memoryview(response)# this one temporary 
     # 1. Создаем мастер-сокет
@@ -61,7 +64,9 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                         "socket": client_socket,
                         "addr": client_addr,
                         "feed": f.make_streaming_request_parser(),
-                        "response": None
+                        "response": None,
+                        "handler": handlers['universal_hanlder']
+                        
 
                         
                     }
@@ -89,6 +94,11 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                                 print("Error")
                                 print(status)
                             if status == f.ParserResult.BODY_PARSING_FINISHED:
+                                if arena:
+                                    session = sessions.get(fd)
+                                    if session and 'handler' in session:
+                                        session['handler'](arena)
+
                                 print("finishing, ready to send response ")
                                 inputs.discard(s)
                                 #this one only for the time being see in for writabe

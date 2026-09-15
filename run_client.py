@@ -23,7 +23,7 @@ headers = {
 
 # Отправляем запрос
 response = requests.post(
-    'http://localhost:8090/id/2',
+    'http://localhost:8080/id/2',
     headers=headers,
     data=bytes_data  # Важно: передаем байты, не json!
 )
@@ -41,7 +41,7 @@ def generate_chunks():
         yield chunk
         
 response = requests.post(
-    'http://localhost:8090/generator/1',
+    'http://localhost:8080/generator/1',
 
     data=generate_chunks()  # Важно: передаем байты, не json!
 )
