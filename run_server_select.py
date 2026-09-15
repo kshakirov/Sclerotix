@@ -4,8 +4,12 @@ from typing import Dict, Any
 import lib.parsing.factory as f
 
 
+
+    
+
 def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
     response = b"HTTP/1.1 200 OK\r\n\r\n"
+    RESPONSE_VIEW = memoryview(response)# this one temporary 
     # 1. Создаем мастер-сокет
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -22,8 +26,17 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
     inputs = [server_socket] #потом поменяем дорого список
     outputs = []
     errors = [server_socket]
-
     print(f"[Sclerotix Core] Event Loop started on {host}:{port}")
+    def clean_up_closed_connection(s,selects):
+        fd = s.fileno()
+        print("Cleaning connection ")
+        selects.remove(s)
+        errors.remove(s)
+        del sessions[fd]
+        s.close()
+
+        
+
 
     try:
         while True:
@@ -38,6 +51,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                     
                     fd = client_socket.fileno()
                     inputs.append(client_socket)
+                    errors.append(client_socket)
                     
                     # Инициализируем минимальную сессию под этот fd 
                     sessions[fd] = {
@@ -69,39 +83,45 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                                 inputs.remove(s)
                                 #this one only for the time being see in for writabe
                                 outputs.append(sessions[fd]['socket'])
-                                sessions[fd]['response'] = response
+                                sessions[fd]['response'] = RESPONSE_VIEW
                                 #sessions[fd]['socket'].sendall(response)
                                 #s.close()
                                # del sessions[fd]
                         else:
                             # Клиент закрыл соединение (FIN)
                             print(f"[-] Client disconnected: fd={fd}")
-                            inputs.remove(s)
-                            s.close()
-                            del sessions[fd]
+                            clean_up_closed_connection(s, inputs)
                     except ConnectionResetError:
                         print(f"[!] Connection reset: fd={fd}")
-                        inputs.remove(s)
-                        s.close()
-                        del sessions[fd]
+                        clean_up_closed_connection(s, inputs)
+
+                        
 
             for s in exceptional:
                 fd = s.fileno()
                 print(f"[!] Exception on fd={fd}")
                 if s in inputs:
-                    inputs.remove(s)
-                s.close()
-                sessions.pop(fd, None)
+                    clean_up_closed_connection(s, inputs)
+                else:
+                    clean_up_closed_connection(s,outputs)
+                
+
+                    
+
             for s in writeable:
                 fd = s.fileno()
                 print(f" Writeable  on fd={fd}")
-                response = sessions[fd]['response']
-                print(f" the response to send later {response}")
-                outputs.remove(s)
+                pending_response = sessions[fd]['response']
+                print(f" Sending  response async {pending_response}")
+
                 
-                sent_bytes = s.send(response)
+                sent_bytes = s.send(pending_response)
+                if sent_bytes < len(pending_response):
+                    sessions[fd]['response'] = pending_response[sent_bytes:]
+                    print("Sent only a part")
+                else:
                 #here we must check weather all bytes are sent if not repeat in the next iteration
-                s.close()
+                    clean_up_closed_connection(s, outputs)
 
     except KeyboardInterrupt:
         print("\n[Sclerotix Core] Stopping server...")
