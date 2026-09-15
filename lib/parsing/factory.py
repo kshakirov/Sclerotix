@@ -22,7 +22,8 @@ def make_streaming_request_parser():
       body_parser_state = p.State.EXPECT_CHUNK_SIZE
       body_signal = p.NetworkInput.CHUNK_DATA_EMPTY
       body_current_value=0
-      arena = bytearray(32)
+      arena = bytearray(64 * 1024)
+      arena_view= memoryview(arena)
       arena_offset=0
       phase = Phase.HEADERS
       offset_table = array("i")
@@ -41,6 +42,7 @@ def make_streaming_request_parser():
           nonlocal header_parser_state
           nonlocal offset_table
           nonlocal arena
+          nonlocal arena_view
           if phase == Phase.HEADERS:
 
               input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
@@ -68,7 +70,7 @@ def make_streaming_request_parser():
                       else:
                           found_header= ContentHeader.CONTENT_LENGTH
 
-                      arena = bytearray(body_current_value)
+                          #not needed any more   arena = bytearray(body_current_value)
                    # here comes checking for empty body later         
 
                   if not found_header:
@@ -84,19 +86,23 @@ def make_streaming_request_parser():
                   return ParserResult.NEED_MORE_DATA, None
 
           if phase == Phase.BODY:
-              if len(input_buffer) > len(arena):
-                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
+#              if len(input_buffer) > len(arena):
+#                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
               body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
                   body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
     )
               print(f"FFFFF {body_parser_state}")
               match body_parser_state:
                   case p.State.SUCCESS:
-                      return ParserResult.BODY_PARSING_FINISHED, arena[:arena_offset]
+                      fragment = arena_view[:arena_offset]
+                      arena_offset = 0
+                      return ParserResult.BODY_PARSING_FINISHED, fragment
                   case p.State.ERROR:
                       return ParserResult.ERROR, None
                   case _ :
-                      return ParserResult.NEED_MORE_DATA, arena
+                      fragment = arena_view[:arena_offset]
+                      arena_offset = 0
+                      return ParserResult.NEED_MORE_DATA, fragment
               
 
       return feed

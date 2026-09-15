@@ -78,6 +78,13 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
                             print(f"[data] Read {len(data)} bytes from fd={fd}")
                             # На следующем наношаге сюда встанет session['feed'](data)!
                             status, arena = sessions[fd]['feed'](data)
+                            if status == f.ParserResult.NEED_MORE_DATA:
+                                if arena:
+                                    #here goes the handler
+                                    session = sessions.get(fd)
+                                    if session and 'handler' in session:
+                                        session['handler'](arena)
+                                    
                             if status == f.ParserResult.ERROR:
                                 print("Error")
                                 print(status)
