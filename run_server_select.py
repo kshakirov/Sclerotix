@@ -100,8 +100,9 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
 
             for s in exceptional:
                 fd = s.fileno()
-                print(f"[!] Exception on fd={fd}")
-                clean_up_closed_connection(s)
+                if fd >= 0:
+                    print(f"[!] Exception on fd={fd}")
+                    clean_up_closed_connection(s)
 
                 
 
@@ -110,17 +111,22 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080):
             for s in writeable:
                 fd = s.fileno()
                 print(f" Writeable  on fd={fd}")
-                pending_response = sessions[fd]['response']
-                print(f" Sending  response  {pending_response}")
+                session = sessions.get(fd)
+                if session:
+                    pending_response = sessions[fd]['response']
+                    print(f" Sending  response  {pending_response}")
 
                 
-                sent_bytes = s.send(pending_response)
-                if sent_bytes < len(pending_response):
-                    sessions[fd]['response'] = pending_response[sent_bytes:]
-                    print("Sent only a part")
+                    sent_bytes = s.send(pending_response)
+                    if sent_bytes < len(pending_response):
+                        sessions[fd]['response'] = pending_response[sent_bytes:]
+                        print("Sent only a part")
+                    else:
+                        #here we must check weather all bytes are sent if not repeat in the next iteration
+                        clean_up_closed_connection(s)
                 else:
-                #here we must check weather all bytes are sent if not repeat in the next iteration
-                    clean_up_closed_connection(s)
+                    outputs.discard(s)
+                    
 
     except KeyboardInterrupt:
         print("\n[Sclerotix Core] Stopping server...")
