@@ -89,9 +89,9 @@ def make_streaming_request_parser():
 #              if len(input_buffer) > len(arena):
 #                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
               body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
-                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
+                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=False
     )
-              print(f"FFFFF {body_parser_state}")
+              #print(f"FFFFF {body_parser_state}")
               match body_parser_state:
                   case p.State.SUCCESS:
                       fragment = arena_view[:arena_offset]
