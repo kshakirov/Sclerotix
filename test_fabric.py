@@ -15,13 +15,20 @@ RAW_STREAM_CONST = (
 
 
 def test_parse(payload):
+    expected_body =b"Wikipedia"
+    collected_body = bytearray(len(expected_body))
     feed = make_streaming_request_parser()
-    arena = None
     result = None
+    arena_idx = 0
     for byte in payload:
 
-        result,arena = feed(bytes([byte]))
+        result,fragment = feed(bytes([byte]))
+        if(fragment):
+            for f in fragment:
+                collected_body[arena_idx] = f
+                arena_idx += 1
 
+    assert(expected_body == collected_body)            
     assert(result == ParserResult.BODY_PARSING_FINISHED)
 
 test_parse(RAW_STREAM_CONST)

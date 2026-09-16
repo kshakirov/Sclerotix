@@ -267,8 +267,8 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
                 
                 pass
             case _:
-                print("run_engine: state is Default  Nothing Found,  running again state is {} network is {} looping  ...".format(state, in_put))
-                
+#                print("run_engine: state is Default  Nothing Found,  running again state is {} network is {} looping  ...".format(state, in_put))
+                pass
 
         #print(f"run_engine: before calling next_state current value is  {in_value}")        
         state,  in_put, in_value =next_state(state, in_put, in_value)
@@ -279,7 +279,7 @@ def run_engine(s, i_p,i_v, buffer, buffer_ptr, arena, arena_pointer, trace_enabl
 
 
 def read_chunk_fixed_length(in_value, buffer, buffer_pointer, arena, arena_pointer):
-    print(f"\t\tread_chunk_fixed_length in_value is {in_value}  buffer length is {len(buffer)}, buffer pointer is {buffer_pointer}")
+    #print(f"\t\tread_chunk_fixed_length in_value is {in_value}  buffer length is {len(buffer)}, buffer pointer is {buffer_pointer}")
     if buffer_pointer < len(buffer):
         while buffer_pointer < len(buffer) and in_value > 0:
             # специально подробно расписываю
@@ -292,7 +292,7 @@ def read_chunk_fixed_length(in_value, buffer, buffer_pointer, arena, arena_point
         if in_value > 0:
             return True, in_value, arena_pointer, buffer_pointer
         else:
-            print(f"00000 {in_value}")
+            #print(f"00000 {in_value}")
             return False, in_value, arena_pointer, buffer_pointer
     else:
         return True, in_value, arena_pointer, buffer_pointer
