@@ -14,11 +14,21 @@ class HeaderState(Enum):
     SUCCESS = 7
     ERROR=8
 
+class Methods(Enum):
+    PUT=b"put"
+    POST=b"post"
+    GET=b"get"
 
-def parse_req_header(input_fragment, input_offset, offset_table, state, next_offset_id):
+class ParserRequiredHeaders(Enum):
+    CONTENT_LENGTH=b"content-length"
+    TRANSFER_ENCODING=b"transfer-encoding"
+
+def parse_req_header(input_fragment, input_offset, offset_table, state, next_offset_id,stream_recognizing_data):
     #state =HeaderState.METHOD
     #offset_table = array('i') # на время только
     #next_offset_id =6
+
+   
     counter = 0
     while counter < len(input_fragment):
         match state:
@@ -50,6 +60,8 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  offset_table.insert(next_offset_id, counter + 1 + input_offset)
                  counter+=1
                  next_offset_id += 1
+                 stream_recognizing_data['headers']['fixed_content_mattch'] =0
+                 stream_recognizing_data['headers']['chunk_content_match'] =0
                  state=HeaderState.HEADER_NAME
             case HeaderState.HEADER_NAME if input_fragment[counter]==58:
                  offset_table.insert(next_offset_id, counter + input_offset)
@@ -67,7 +79,50 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 state=HeaderState.SUCCESS
                 
             case HeaderState.HEADER_NAME:
+                #for simplicity
+                fcm = stream_recognizing_data['headers']['fixed_content_mattch']
+                ccm = stream_recognizing_data['headers']['chunk_content_match'] 
+                #print(fcm, input_fragment[counter],ParserRequiredHeaders.CONTENT_LENGTH.value[fcm])
+                if input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm]:
+                    stream_recognizing_data['headers']['fixed_content_mattch'] += 1
+                    if stream_recognizing_data['headers']['fixed_content_mattch']==14:
+                        #check here if not ocupied by transfer encoding
+                        stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.CONTENT_LENGTH
+                else:
+                    stream_recognizing_data['headers']['fixed_content_mattch'] =0
+                        
+                if input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm]:
+                    stream_recognizing_data['headers']['chunk_content_match'] += 1
+                    if stream_recognizing_data['headers']['chunk_content_match']==17:
+                        #check if it is not ocupied byt fixed
+                        stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.TRANSFER_ENCODING
+                else:
+                    stream_recognizing_data['headers']['chunk_content_match'] =0
+
                 counter += 1
+
+                # if(payload[index] == BodyType.FIXED_CONTENT.bValue()[fixed_content_match]){
+
+		# 	System.out.println("header name " + payload[index] + " match is " + fixed_content_match);
+		# 	fixed_content_match += 1;
+		# 	if(fixed_content_match == 14){
+		# 	    this.bodyType = BodyType.FIXED_CONTENT;
+		# 	}
+		#     }else{
+		# 	fixed_content_match = 0;
+		#     }
+
+		#     if(payload[index] == BodyType.CHUNK_CONTENT.bValue()[chunk_content_match]){
+
+		# 	System.out.println("header name " + payload[index] + " match is " + chunk_content_match);
+		# 	chunk_content_match += 1;
+		# 	if(chunk_content_match == 17){
+		# 	    this.bodyType = BodyType.CHUNK_CONTENT;
+		# 	}
+		#     }else{
+		# 	chunk_content_match = 0;
+		#     }
+                
             case HeaderState.HEADER_VALUE if input_fragment[counter]==13:
                 offset_table.insert(next_offset_id, counter + input_offset)
                 next_offset_id += 1
@@ -82,7 +137,7 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 state= HeaderState.ERROR
                 break
 
-    return input_offset + counter, offset_table, state, next_offset_id
+    return input_offset + counter, offset_table, state, next_offset_id, stream_recognizing_data
 
 
 def cmp_ascii_one_by_one(b_template, b_candidate):
