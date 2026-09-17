@@ -129,6 +129,11 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 state = HeaderState.EXPECT_CRLF
                 counter += 1
             case HeaderState.HEADER_VALUE:
+                if stream_recognizing_data['headers']['content_type'] == ParserRequiredHeaders.CONTENT_LENGTH:
+                    if input_fragment[counter] > 47 and input_fragment[counter] < 58:
+                        stream_recognizing_data['headers']['content_length'] = stream_recognizing_data['headers']['content_length'] * 10 + input_fragment[counter] - 48
+
+
                 counter += 1
             case HeaderState.SUCCESS:
                 break

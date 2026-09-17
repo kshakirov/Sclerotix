@@ -29,9 +29,10 @@ def make_streaming_request_parser():
       offset_table = array("i")
       header_parser_state=hp.HeaderState.METHOD
       next_offset_id=6
+      stream_recognizing_data = { 'headers': {'chunk_content_match':0,     'fixed_content_mattch':0, 'content_type': None, 'content_length': 0}}
 
       def feed(input_fragment):
-          input_buffer.extend(input_fragment)
+          input_buffer = input_fragment
           nonlocal input_offset
           nonlocal body_parser_state
           nonlocal body_signal
@@ -43,26 +44,25 @@ def make_streaming_request_parser():
           nonlocal offset_table
           nonlocal arena
           nonlocal arena_view
+          nonlocal stream_recognizing_data
           if phase == Phase.HEADERS:
 
-              input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
+              input_offset, offset_table,header_parser_state, next_offset_id,stream_recognizing_data = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id,stream_recognizing_data)
               found_header = None
               if header_parser_state == hp.HeaderState.SUCCESS:
-                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
-                  if h_start and h_end:
-                      if hp.is_transfer_encoding(offset_table, input_buffer):
-                          body_parser_state = p.State.EXPECT_CHUNK_SIZE
-                          phase = Phase.BODY
-                          found_header = ContentHeader.TRANSFER_ENCODING
-                      else:
-                          return ParserResult.ERROR, None
+#                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
+                  if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.TRANSFER_ENCODING:
+                      body_parser_state = p.State.EXPECT_CHUNK_SIZE
+                      phase = Phase.BODY
+                      found_header = ContentHeader.TRANSFER_ENCODING
+
                       
                       #print(f"Success")
-                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
-                  if h_start and h_end:
+#                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
+                  if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.CONTENT_LENGTH:
                       body_parser_state = p.State.PARSE_HEADERS# dont' remember which must be
                       body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
-                      body_current_value = hp.get_content_length_if_content_length(offset_table, input_buffer) # value from header must be parsed here
+                      body_current_value =  stream_recognizing_data['headers']['content_length']# value from header must be parsed here
                       phase = Phase.BODY
 
                       if found_header == ContentHeader.TRANSFER_ENCODING:
