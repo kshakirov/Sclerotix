@@ -18,7 +18,7 @@ class ContentHeader(Enum):
 
 def make_streaming_request_parser():
       input_buffer = bytearray()
-      input_offset = 0
+      header_stream_offset = 0
       body_parser_state = p.State.EXPECT_CHUNK_SIZE
       body_signal = p.NetworkInput.CHUNK_DATA_EMPTY
       body_current_value=0
@@ -33,7 +33,8 @@ def make_streaming_request_parser():
 
       def feed(input_fragment):
           input_buffer = input_fragment
-          nonlocal input_offset
+          body_fragment_offset = 0
+          nonlocal header_stream_offset
           nonlocal body_parser_state
           nonlocal body_signal
           nonlocal body_current_value
@@ -47,7 +48,9 @@ def make_streaming_request_parser():
           nonlocal stream_recognizing_data
           if phase == Phase.HEADERS:
 
-              input_offset, offset_table,header_parser_state, next_offset_id,stream_recognizing_data = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id,stream_recognizing_data)
+              previous_header_stream_offset = header_stream_offset
+              header_stream_offset, offset_table,header_parser_state, next_offset_id,stream_recognizing_data = hp.parse_req_header(input_fragment,header_stream_offset, offset_table, header_parser_state, next_offset_id,stream_recognizing_data)
+              body_fragment_offset = header_stream_offset - previous_header_stream_offset
               found_header = None
               if header_parser_state == hp.HeaderState.SUCCESS:
 #                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
@@ -88,8 +91,8 @@ def make_streaming_request_parser():
           if phase == Phase.BODY:
 #              if len(input_buffer) > len(arena):
 #                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
-              body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
-                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=False
+              body_parser_state, body_signal, body_fragment_offset, body_current_value, arena_offset= p.run_engine(
+                  body_parser_state,body_signal, body_current_value, input_buffer, body_fragment_offset, arena,arena_offset,trace_enabled=False
     )
               #print(f"FFFFF {body_parser_state}")
               match body_parser_state:
@@ -106,5 +109,4 @@ def make_streaming_request_parser():
               
 
       return feed
-
 
