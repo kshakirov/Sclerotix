@@ -29,7 +29,7 @@ def make_streaming_request_parser():
       offset_table = array("i")
       header_parser_state=hp.HeaderState.METHOD
       next_offset_id=6
-      stream_recognizing_data = { 'headers': {'chunk_content_match':0,     'fixed_content_mattch':0, 'content_type': None, 'content_length': 0}}
+      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'content_length': 0}}
 
       def feed(input_fragment):
           input_buffer = input_fragment

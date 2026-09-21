@@ -70,6 +70,10 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  next_offset_id += 1
                  state = HeaderState.HEADER_VALUE
                  counter += 1
+                 stream_recognizing_data['headers']['fixed_content_mattch'] = 0
+                 stream_recognizing_data['headers']['chunk_content_match'] =0
+                 stream_recognizing_data['headers']['fixed_content_failed_prefix']= False
+                 stream_recognizing_data['headers']['chunk_content_failed_prefix']= False
             case HeaderState.HEADER_NAME if input_fragment[counter] == 13:
                 counter += 1
                 state= HeaderState.EXPECT_END_LF
@@ -83,46 +87,28 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 fcm = stream_recognizing_data['headers']['fixed_content_mattch']
                 ccm = stream_recognizing_data['headers']['chunk_content_match'] 
                 #print(fcm, input_fragment[counter],ParserRequiredHeaders.CONTENT_LENGTH.value[fcm])
-                if input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm]:
+                if (input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm] or input_fragment[counter] + 32 == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm]) and not stream_recognizing_data['headers']['fixed_content_failed_prefix']:
                     stream_recognizing_data['headers']['fixed_content_mattch'] += 1
                     if stream_recognizing_data['headers']['fixed_content_mattch']==14:
                         #check here if not ocupied by transfer encoding
                         stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.CONTENT_LENGTH
                 else:
                     stream_recognizing_data['headers']['fixed_content_mattch'] =0
+                    stream_recognizing_data['headers']['fixed_content_failed_prefix'] =True
                         
-                if input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm]:
+                if (input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm] or input_fragment[counter] + 32 == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm]) and not stream_recognizing_data['headers']['chunk_content_failed_prefix']:
                     stream_recognizing_data['headers']['chunk_content_match'] += 1
                     if stream_recognizing_data['headers']['chunk_content_match']==17:
                         #check if it is not ocupied byt fixed
                         stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.TRANSFER_ENCODING
                 else:
                     stream_recognizing_data['headers']['chunk_content_match'] =0
+                    stream_recognizing_data['headers']['chunk_content_failed_prefix'] =True
+                    
 
                 counter += 1
 
-                # if(payload[index] == BodyType.FIXED_CONTENT.bValue()[fixed_content_match]){
-
-		# 	System.out.println("header name " + payload[index] + " match is " + fixed_content_match);
-		# 	fixed_content_match += 1;
-		# 	if(fixed_content_match == 14){
-		# 	    this.bodyType = BodyType.FIXED_CONTENT;
-		# 	}
-		#     }else{
-		# 	fixed_content_match = 0;
-		#     }
-
-		#     if(payload[index] == BodyType.CHUNK_CONTENT.bValue()[chunk_content_match]){
-
-		# 	System.out.println("header name " + payload[index] + " match is " + chunk_content_match);
-		# 	chunk_content_match += 1;
-		# 	if(chunk_content_match == 17){
-		# 	    this.bodyType = BodyType.CHUNK_CONTENT;
-		# 	}
-		#     }else{
-		# 	chunk_content_match = 0;
-		#     }
-                
+                              
             case HeaderState.HEADER_VALUE if input_fragment[counter]==13:
                 offset_table.insert(next_offset_id, counter + input_offset)
                 next_offset_id += 1

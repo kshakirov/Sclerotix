@@ -32,7 +32,9 @@ def test_parse_header(payload):
       offset_table = array('i') # на время только
       next_offset_id =6
       input_offset = 0
-      stream_recognizing_data = { 'headers': {'chunk_content_match':0,     'fixed_content_mattch':0, 'content_type': None, 'content_length': 0}}
+      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix' : False,
+                                              'fixed_content_match':0, 'fixed_content_failed_prefix': False,
+                                              'content_type': None, 'content_length': 0}}
       for b in payload:
             input_offset, offset_table,state, next_offset_id, stream_recognizing_data = parse_req_header([b],input_offset, offset_table,state, next_offset_id, stream_recognizing_data)
       return offset_table, stream_recognizing_data
