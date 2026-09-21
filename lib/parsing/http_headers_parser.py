@@ -70,6 +70,11 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  next_offset_id += 1
                  state = HeaderState.HEADER_VALUE
                  counter += 1
+                 if stream_recognizing_data['headers']['fixed_content_mattch']==14:
+                     stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.CONTENT_LENGTH
+                 if stream_recognizing_data['headers']['chunk_content_match']==17 :
+                     stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.TRANSFER_ENCODING
+
                  stream_recognizing_data['headers']['fixed_content_mattch'] = 0
                  stream_recognizing_data['headers']['chunk_content_match'] =0
                  stream_recognizing_data['headers']['fixed_content_failed_prefix']= False
@@ -87,20 +92,15 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 fcm = stream_recognizing_data['headers']['fixed_content_mattch']
                 ccm = stream_recognizing_data['headers']['chunk_content_match'] 
                 #print(fcm, input_fragment[counter],ParserRequiredHeaders.CONTENT_LENGTH.value[fcm])
-                if (input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm] or input_fragment[counter] + 32 == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm]) and not stream_recognizing_data['headers']['fixed_content_failed_prefix']:
+                if  fcm < 14 and (input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm] or input_fragment[counter] + 32 == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm]) and not stream_recognizing_data['headers']['fixed_content_failed_prefix']:
                     stream_recognizing_data['headers']['fixed_content_mattch'] += 1
-                    if stream_recognizing_data['headers']['fixed_content_mattch']==14:
-                        #check here if not ocupied by transfer encoding
-                        stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.CONTENT_LENGTH
                 else:
                     stream_recognizing_data['headers']['fixed_content_mattch'] =0
                     stream_recognizing_data['headers']['fixed_content_failed_prefix'] =True
                         
-                if (input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm] or input_fragment[counter] + 32 == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm]) and not stream_recognizing_data['headers']['chunk_content_failed_prefix']:
+                if  ccm < 17 and (input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm] or input_fragment[counter] + 32 == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm]) and not stream_recognizing_data['headers']['chunk_content_failed_prefix']:
                     stream_recognizing_data['headers']['chunk_content_match'] += 1
-                    if stream_recognizing_data['headers']['chunk_content_match']==17:
-                        #check if it is not ocupied byt fixed
-                        stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.TRANSFER_ENCODING
+
                 else:
                     stream_recognizing_data['headers']['chunk_content_match'] =0
                     stream_recognizing_data['headers']['chunk_content_failed_prefix'] =True
