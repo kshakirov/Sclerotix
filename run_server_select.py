@@ -4,8 +4,9 @@ from typing import Dict, Any
 import lib.parsing.factory as f
 
 def stupid_universal_handler(arena_chunk):
-    print("I am a stupid handler for arena chunks")
-    print(f"here goes the arena fragment {arena_chunk}")
+    pass
+    #print("I am a stupid handler for arena chunks")
+    #print(f"here goes the arena fragment {arena_chunk}")
 
 handlers = {'universal_hanlder': stupid_universal_handler}
     
@@ -31,10 +32,10 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
     outputs = set()
     errors = set()
     errors.add(server_socket)
-    print(f"[Sclerotix Core] Event Loop started on {host}:{port}")
+    #print(f"[Sclerotix Core] Event Loop started on {host}:{port}")
     def clean_up_closed_connection(s):
         fd = s.fileno()
-        print("Cleaning connection ")
+        #print("Cleaning connection ")
         outputs.discard(s)
         inputs.discard(s)
         errors.discard(s)
@@ -70,7 +71,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
 
                         
                     }
-                    print(f"[+] Client connected: fd={fd}, addr={client_addr}")
+                    #print(f"[+] Client connected: fd={fd}, addr={client_addr}")
 
                 else:
                     # Прилетели данные от существующего клиента
@@ -80,7 +81,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
                     try:
                         data = s.recv(1024)
                         if data:
-                            print(f"[data] Read {len(data)} bytes from fd={fd}")
+                            #print(f"[data] Read {len(data)} bytes from fd={fd}")
                             # На следующем наношаге сюда встанет session['feed'](data)!
                             status, arena = sessions[fd]['feed'](data)
                             if status == f.ParserResult.NEED_MORE_DATA:
@@ -92,14 +93,14 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
                                     
                             if status == f.ParserResult.ERROR:
                                 print("Error")
-                                print(status)
+                                #print(status)
                             if status == f.ParserResult.BODY_PARSING_FINISHED:
                                 if arena:
                                     session = sessions.get(fd)
                                     if session and 'handler' in session:
                                         session['handler'](arena)
 
-                                print("finishing, ready to send response ")
+                                #print("finishing, ready to send response ")
                                 inputs.discard(s)
                                 #this one only for the time being see in for writabe
                                 outputs.add(sessions[fd]['socket'])
@@ -107,10 +108,10 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
 
                         else:
                             # Клиент закрыл соединение (FIN)
-                            print(f"[-] Client disconnected: fd={fd}")
+                            #print(f"[-] Client disconnected: fd={fd}")
                             clean_up_closed_connection(s)
                     except ConnectionResetError:
-                        print(f"[!] Connection reset: fd={fd}")
+                        #print(f"[!] Connection reset: fd={fd}")
                         clean_up_closed_connection(s)
 
                         
@@ -118,7 +119,7 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
             for s in exceptional:
                 fd = s.fileno()
                 if fd >= 0:
-                    print(f"[!] Exception on fd={fd}")
+                    #print(f"[!] Exception on fd={fd}")
                     clean_up_closed_connection(s)
 
                 
@@ -127,17 +128,17 @@ def run_event_loop(host: str = "127.0.0.1", port: str = 8080, handlers= handlers
 
             for s in writeable:
                 fd = s.fileno()
-                print(f" Writeable  on fd={fd}")
+                #print(f" Writeable  on fd={fd}")
                 session = sessions.get(fd)
                 if session:
                     pending_response = sessions[fd]['response']
-                    print(f" Sending  response  {pending_response}")
+                    #print(f" Sending  response  {pending_response}")
 
                 
                     sent_bytes = s.send(pending_response)
                     if sent_bytes < len(pending_response):
                         sessions[fd]['response'] = pending_response[sent_bytes:]
-                        print("Sent only a part")
+                        #print("Sent only a part")
                     else:
                         #here we must check weather all bytes are sent if not repeat in the next iteration
                         clean_up_closed_connection(s)
