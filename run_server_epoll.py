@@ -9,7 +9,10 @@ def stupid_universal_handler(arena_chunk):
 handlers = {'universal_hanlder': stupid_universal_handler}
 
 def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers):
-    response = b"HTTP/1.1 200 OK\r\n\r\n"
+    #response = b"HTTP/1.1 200 OK\r\n\r\n"
+    # В run_server_epoll.py заменяем ответ на полноценный:
+    response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+
     RESPONSE_VIEW = memoryview(response)
 
     # 1. Создаем мастер-сокет
