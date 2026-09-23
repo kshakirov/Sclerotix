@@ -15,9 +15,12 @@ class HeaderState(Enum):
     ERROR=8
 
 class Methods(Enum):
-    PUT=b"put"
-    POST=b"post"
-    GET=b"get"
+    PUT=1
+    POST=2
+    PATCH=3
+    HEAD=4
+    DELETE=5
+    GET=6
 
 class ParserRequiredHeaders(Enum):
     CONTENT_LENGTH=b"content-length"
@@ -36,12 +39,25 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  offset_table.insert(0,0)
                  offset_table.insert(1, counter + input_offset)
                  offset_table.insert(2, counter + 1 +input_offset)
+                 #an example
+                 if stream_recognizing_data['methods']['guess'] == Methods.GET and counter > 3:
+                     state=HeaderState.ERROR
+                     break
+                     
                  counter+=1
                  state=HeaderState.REQURI
                  
             case HeaderState.METHOD:
+                error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
+                if error:
+#                    state = error
+                    print(error)
+                else:
+                    stream_recognizing_data['methods']['guess'] = guess
+                    stream_recognizing_data['methods']['matched_index'] = matched_index
                 counter += 1;
-                # здесь будет защита от некорректного метода или попытки ддос атаки 
+                # здесь будет защита от некорректного метода или попытки ддос атаки
+                
             case HeaderState.REQURI if input_fragment[counter]==32:
                  offset_table.insert(3,counter + input_offset)
                  offset_table.insert(4, counter + 1 + input_offset)
@@ -131,150 +147,64 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
     return input_offset + counter, offset_table, state, next_offset_id, stream_recognizing_data
 
 
-def cmp_ascii_one_by_one(b_template, b_candidate):
-      if b_template == b_candidate:
-            return True
-      else:
-            if b_template > b_candidate:
-                  if b_template - 32 == b_candidate:
-                        return True
 
-            return False
-def cmp_header_names(template, buffer, start, end):
-      if len(template) != end - start:
-            return False
-      else:
-            for i in range(len(template)):
-                  if not cmp_ascii_one_by_one(template[i],buffer[start + i]):
-                        return False
-            return True
-      
-
-def get_headers(offset_table, payload, template):
-    base = 6 
-    for i in range(floor((len(offset_table) -  base) /4)):
-        r = base + i*4
-        if cmp_header_names(template, payload, offset_table[r], offset_table[r + 1]):
-            return offset_table[r + 2], offset_table[r + 3]
-                  
-    return None, None
-
-def is_transfer_encoding(offset_table, payload):
-    template = b"transfer-encoding"
-    template_value = b"chunked"
-    s,e = get_headers(offset_table, payload, template)
-    #print(s,e)
-    if not  s or not e:
-        return False
-    else:
-        length = e - s
-        if length < len(template_value):
-            return False
-        if length == len(template_value):
-            for i in range(length):
-                if template_value[i] != payload[s + i]:
-                    return False
-            return True
-        else: # maybe spaces
-
-            real_value_start = s
-            for i in range(length):
-                if payload[s + i] != 32:
-                    real_value_start = s + i
-                    break
-            left_length = e - real_value_start
-            if left_length < len(template_value):
-                return False
-            else:
-                for i in range(len(template_value)):
-                    if not cmp_ascii_one_by_one(template_value[i],payload[real_value_start + i]):
-                        return False
-                if payload[real_value_start + len(template_value)]!= 13:
-                           return False
-                return True
-
-def is_hex(candidate):
-    numbers_start = 47
-    numbers_end = 58
-    hex_start = 63
-    hex_end = 71
-    # + 32 too
-    if candidate > numbers_start and candidate < numbers_end:
-        return True, candidate - 48
-    elif candidate > hex_start and candidate < hex_end:
-        hex_val = 0
-        match candidate:
-            case 70:
-                hex_val = 15
-
-            case 69:
-                hex_val = 14
-
-            case 68:
-                hex_val = 13
-
-            case 67:
-                hex_val = 12
-
-            case 66:
-                hex_val = 11
-
-            case 65:
-                hex_val = 10
-
-
-        return True, hex_val
-    elif candidate > hex_start + 32  and candidate < hex_end + 32:
-        return True, 10 # ignoring for the moment
-    else:
-        return False, None
-
-def is_decimal(candidate):
-    numbers_start = 47
-    numbers_end = 58
-
-    if candidate > numbers_start and candidate < numbers_end:
-        return True, candidate - 48
-    else:
-        return False, None
-
-
-def get_content_length_if_content_length(offset_table, payload):
-    
-    template = b"content-length"
-
-    s,e = get_headers(offset_table, payload, template)
-    #print(s,e)
-    if not  s or not e:
-        return False
-    else:
-        length = e - s
-        #ignoring spaces only after numbers for the moment 32 
-        spaces = True
-        after_spaces_index = 0
-        length_without_spaces = length
-        result = 0
-
-        for i in range(length):
-            if payload[i + s] == 32:
-                if spaces:
-                    after_spaces_index = i
-                    length_without_spaces -= 1
-                    pass
-                else:
-
-                    return False
-            else:
-                spaces = False
-                h, value  =  is_decimal(payload[i +s])
-                if h:
-
-                    result += value  * 10 ** (length_without_spaces -1)
-                    #print(payload[i + s], value, length_without_spaces, result)
-                    length_without_spaces -= 1
-                else:
-                    #print("here")
-                    return False
-                    
-        return result
-            
+def method_recognizer(b, matched_index, guess):
+    print(b, matched_index,guess)
+    match matched_index:
+        case 0:
+            match b:
+                case 80:
+                    guess = 110
+                case 71:
+                    guess = Methods.GET
+                case 72:
+                    guess = Methods.HEAD
+                case 68:
+                    guess = Methods.DELETE
+                case _:
+                    return HeaderState.ERROR, None,None
+        case 1 if guess == 110:
+            match b:
+                case 85:
+                    guess = Methods.PUT
+                case 79:
+                    guess = Methods.POST
+                case 65:
+                    guess = Methods.PATCH
+                case _:
+                    return HeaderState.ERROR, None,None
+        case 1:
+            match b:
+                case 69:
+                    guess =guess
+                case _:
+                    return HeaderState.ERROR, None,None
+        case 2:
+            match b:
+                case 84 if guess == Methods.GET:
+                    guess = Methods.GET
+                case 84 if guess == Methods.PUT:
+                    guess = Methods.PUT
+                case 76:
+                    guess =guess
+                case 65:
+                    guess =guess
+                case 83:
+                    guess=guess
+                case _:
+                    return HeaderState.ERROR, None, None
+        case 3:
+            match b:
+                case 84 if guess==Methods.POST:
+                    guess = guess
+                case 84:
+                    return HeaderState.ERROR, None, None
+                case _:
+                    guess = guess
+                
+        case 10:
+            return HeaderState.ERROR, None, None
+    matched_index += 1
+    return None, guess, matched_index
+                
+                

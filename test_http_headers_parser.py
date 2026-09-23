@@ -1,4 +1,4 @@
-from lib.parsing.http_headers_parser import parse_req_header, HeaderState, cmp_header_names,cmp_ascii_one_by_one, get_headers, is_transfer_encoding,get_content_length_if_content_length, ParserRequiredHeaders
+from lib.parsing.http_headers_parser import parse_req_header, HeaderState,  ParserRequiredHeaders, Methods
 from array import array
 from math import floor,ceil
 
@@ -16,7 +16,7 @@ raw_get_request = (
     b"4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
 )
 RAW_STREAM = (
-      b"POST /api/data HTTP/1.1\r\n"
+      b"PUT /api/data HTTP/1.1\r\n"
       b"content-length: 123\r\n"
       b"\r\n"
       b"Wikipedia"
@@ -34,7 +34,7 @@ def test_parse_header(payload):
       input_offset = 0
       stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix' : False,
                                               'fixed_content_match':0, 'fixed_content_failed_prefix': False,
-                                              'content_type': None, 'content_length': 0}}
+                                              'content_type': None, 'content_length': 0}, 'methods':{'guess': None, 'matched_index':0}}
       for b in payload:
             input_offset, offset_table,state, next_offset_id, stream_recognizing_data = parse_req_header([b],input_offset, offset_table,state, next_offset_id, stream_recognizing_data)
       return offset_table, stream_recognizing_data
@@ -46,9 +46,13 @@ def test_parse_header(payload):
 # assert(not r)
 
 r,data = test_parse_header(raw_get_request)
+print(data)
 assert(data['headers']['content_type'] == ParserRequiredHeaders.TRANSFER_ENCODING)
+assert(data['methods']['guess'] == Methods.POST)
+
 r,data = test_parse_header(RAW_STREAM)
-print(data)
+
 assert(data['headers']['content_type'] == ParserRequiredHeaders.CONTENT_LENGTH)
-print(data)
+assert(data['methods']['guess'] == Methods.PUT)
+
 
