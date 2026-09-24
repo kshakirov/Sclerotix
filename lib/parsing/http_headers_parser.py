@@ -41,10 +41,12 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  offset_table.insert(1, counter + input_offset)
                  offset_table.insert(2, counter + 1 +input_offset)
                  #an example
-                 if stream_recognizing_data['methods']['guess'] == Methods.GET and counter > 3:
-                     state=HeaderState.ERROR
+                 error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
+                 if error:
+                     state = error
                      break
-                     
+
+
                  counter+=1
                  state=HeaderState.REQURI
                  
@@ -52,7 +54,7 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
                 if error:
                     state = error
-                    print(error)
+                    break
                 else:
                     stream_recognizing_data['methods']['guess'] = guess
                     stream_recognizing_data['methods']['matched_index'] = matched_index
@@ -200,8 +202,19 @@ def method_recognizer(b, matched_index, guess):
                     guess = guess
                 case 84:
                     return HeaderState.ERROR, None, None
-                case _:
+                case 32 if guess==Methods.PUT or guess==Methods.GET:
                     guess = guess
+                    
+        case 4:
+            match b:
+                case _ if guess==Methods.PUT or guess==Methods.GET:
+                    return HeaderState.ERROR, None, None
+                case 32 if guess==Methods.POST:
+                    guess = guess
+        case 5:
+            match b:
+                case _ if guess==Methods.POST:
+                    return HeaderState.ERROR, None, None
                 
         case 10:
             return HeaderState.ERROR, None, None
