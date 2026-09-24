@@ -21,6 +21,7 @@ class Methods(Enum):
     HEAD=4
     DELETE=5
     GET=6
+    Pstar=7
 
 class ParserRequiredHeaders(Enum):
     CONTENT_LENGTH=b"content-length"
@@ -154,7 +155,7 @@ def method_recognizer(b, matched_index, guess):
         case 0:
             match b:
                 case 80:
-                    guess = 110
+                    guess = Methods.Pstar
                 case 71:
                     guess = Methods.GET
                 case 72:
@@ -163,7 +164,7 @@ def method_recognizer(b, matched_index, guess):
                     guess = Methods.DELETE
                 case _:
                     return HeaderState.ERROR, None,None
-        case 1 if guess == 110:
+        case 1 if guess == Methods.Pstar:
             match b:
                 case 85:
                     guess = Methods.PUT
