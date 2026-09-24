@@ -51,7 +51,7 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
             case HeaderState.METHOD:
                 error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
                 if error:
-#                    state = error
+                    state = error
                     print(error)
                 else:
                     stream_recognizing_data['methods']['guess'] = guess
