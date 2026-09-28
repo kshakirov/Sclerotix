@@ -67,6 +67,9 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  counter+=1
                  state=HeaderState.REQVERSION
             case HeaderState.REQURI:
+                i = stream_recognizing_data['url']['length']
+                stream_recognizing_data['url']['buffer'][i] = input_fragment[counter]
+                stream_recognizing_data['url']['length'] = i + 1
                 counter+=1 
 
             case HeaderState.REQVERSION if input_fragment[counter]==13:

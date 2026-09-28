@@ -34,7 +34,15 @@ def test_parse_header(payload):
       input_offset = 0
       stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix' : False,
                                               'fixed_content_match':0, 'fixed_content_failed_prefix': False,
-                                              'content_type': None, 'content_length': 0}, 'methods':{'guess': None, 'matched_index':0}}
+                                              'content_type': None, 'content_length': 0}, 'methods':{'guess': None, 'matched_index':0
+                                                                                                     },
+                                 'config': {
+                                       'max_url_length': 2048  # Лимит пользователя
+                                 },
+                                  'url': {
+                                        'buffer': bytearray(2048),  # Заранее выделенный буфер нужного размера
+                                        'length': 0                 # Текущая длина записанного URL
+                                  }}
       for b in payload:
             input_offset, offset_table,state, next_offset_id, stream_recognizing_data = parse_req_header([b],input_offset, offset_table,state, next_offset_id, stream_recognizing_data)
       return offset_table, stream_recognizing_data
@@ -46,13 +54,19 @@ def test_parse_header(payload):
 # assert(not r)
 
 r,data = test_parse_header(raw_get_request)
-print(data)
+
 assert(data['headers']['content_type'] == ParserRequiredHeaders.TRANSFER_ENCODING)
 assert(data['methods']['guess'] == Methods.POST)
+assert data['url']['length'] == len("/api/v1/status"), f"dont match {len("/api/v1/status")} and {data['url']['length']}"
+assert memoryview(data['url']['buffer'])[0:data['url']['length']] == b"/api/v1/status", f"dont match {data['url']['buffer']} and {b'/api/v1/status'}"
+
 
 r,data = test_parse_header(RAW_STREAM)
 
 assert(data['headers']['content_type'] == ParserRequiredHeaders.CONTENT_LENGTH)
 assert(data['methods']['guess'] == Methods.PUT)
+assert data['url']['length'] == len("/api/data"), f"dont match 100 and {data['url']['length']}"
+assert memoryview(data['url']['buffer'])[0:data['url']['length']] == b"/api/data", f"dont match {data['url']['buffer']} and {b'/api/data'}"
+
 
 
