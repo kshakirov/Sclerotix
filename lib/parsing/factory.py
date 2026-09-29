@@ -29,7 +29,14 @@ def make_streaming_request_parser():
       offset_table = array("i")
       header_parser_state=hp.HeaderState.METHOD
       next_offset_id=6
-      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'content_length': 0},'methods':{'guess': None, 'matched_index':0}}
+      MAX_URL_LENGTH = 2048
+      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'content_length': 0},'methods':{'guess': None, 'matched_index':0}, 'config': {
+                                       'max_url_length': MAX_URL_LENGTH  # Лимит пользователя
+                                 },
+                                  'url': {
+                                        'buffer': bytearray(MAX_URL_LENGTH),  # Заранее выделенный буфер нужного размера
+                                        'length': 0                 # Текущая длина записанного URL
+                                  }};
 
       def feed(input_fragment):
           input_buffer = input_fragment
@@ -69,7 +76,7 @@ def make_streaming_request_parser():
                       phase = Phase.BODY
 
                       if found_header == ContentHeader.TRANSFER_ENCODING:
-                          return ParserResult.ERROR, None
+                          return ParserResult.ERROR, None, stream_recognizing_data
                       else:
                           found_header= ContentHeader.CONTENT_LENGTH
 
@@ -78,15 +85,15 @@ def make_streaming_request_parser():
 
                   if not found_header:
                       #means no body interesting for us
-                      return ParserResult.BODY_PARSING_FINISHED, None 
+                      return ParserResult.BODY_PARSING_FINISHED, None , stream_recognizing_data
                   
               elif header_parser_state == hp.HeaderState.ERROR:
                   #do exit for later left
-                  return ParserResult.ERROR, None
+                  return ParserResult.ERROR, None, stream_recognizing_data
               
               else:
                   #print(header_parser_state)
-                  return ParserResult.NEED_MORE_DATA, None
+                  return ParserResult.NEED_MORE_DATA, None, stream_recognizing_data
 
           if phase == Phase.BODY:
 #              if len(input_buffer) > len(arena):
@@ -99,13 +106,13 @@ def make_streaming_request_parser():
                   case p.State.SUCCESS:
                       fragment = arena_view[:arena_offset]
                       arena_offset = 0
-                      return ParserResult.BODY_PARSING_FINISHED, fragment
+                      return ParserResult.BODY_PARSING_FINISHED, fragment, stream_recognizing_data
                   case p.State.ERROR:
-                      return ParserResult.ERROR, None
+                      return ParserResult.ERROR, None, stream_recognizing_data
                   case _ :
                       fragment = arena_view[:arena_offset]
                       arena_offset = 0
-                      return ParserResult.NEED_MORE_DATA, fragment
+                      return ParserResult.NEED_MORE_DATA, fragment, stream_recognizing_data
               
 
       return feed

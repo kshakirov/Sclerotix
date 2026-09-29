@@ -2,11 +2,13 @@ import socket
 import select
 from typing import Dict, Any
 import lib.parsing.factory as f
-
+from lib.handling.handler import resolve_handler, hash_bytes
 def stupid_universal_handler(arena_chunk):
     pass
 
 handlers = {'universal_hanlder': stupid_universal_handler}
+
+
 
 def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers):
     #response = b"HTTP/1.1 200 OK\r\n\r\n"
@@ -67,8 +69,8 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers)
                                 "socket": client_socket,
                                 "addr": client_addr,
                                 "feed": f.make_streaming_request_parser(),
-                                "response": None,
-                                "handler": handlers['universal_hanlder']
+                                "response": None
+
                             }
                         except BlockingIOError:
                             # Все входящие соединения вычитаны
@@ -92,7 +94,7 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers)
                     try:
                         data = sock.recv(1024)
                         if data:
-                            status, arena = session['feed'](data)
+                            status, arena, recognizing_data = session['feed'](data)
 
                             if status == f.ParserResult.NEED_MORE_DATA:
                                 if arena and session.get('handler'):
@@ -100,12 +102,12 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers)
 
                             elif status == f.ParserResult.ERROR:
                                 clean_up_closed_connection(fd)
-
+                                
                             elif status == f.ParserResult.BODY_PARSING_FINISHED:
-                                if arena and session.get('handler'):
-                                    session['handler'](arena)
-
-                                session['response'] = RESPONSE_VIEW
+                                if not session.get('handler'):
+                                    handler = resolve_handler(hash_bytes(recognizing_data), recognizing_data['methods']['guess'])
+                                    session['handler'] = handler
+                                session['response'] = session['handler'](recognizing_data, arena)
                                 # Переключаем epoll сокет с чтения (EPOLLIN) на запись (EPOLLOUT)
                                 epoll.modify(fd, select.EPOLLOUT)
 

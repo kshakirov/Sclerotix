@@ -13,7 +13,7 @@ class HeaderState(Enum):
     EXPECT_END_LF=9
     SUCCESS = 7
     ERROR=8
-
+# TODO move headers to common types
 class Methods(Enum):
     PUT=1
     POST=2

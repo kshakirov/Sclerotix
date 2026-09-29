@@ -1,4 +1,5 @@
 from lib.parsing.factory  import make_streaming_request_parser, ParserResult
+from lib.parsing.http_headers_parser import Methods
 
 payload =  b"POST /api/data HTTP/1.1\r\n"
 #RAW_STREAM = b"4\r\nWiki\r\n5\r\npedia\r\n0\r\n\r\n"
@@ -22,16 +23,17 @@ def test_parse(payload):
     arena_idx = 0
     for byte in payload:
 
-        result,fragment = feed(bytes([byte]))
+        result,fragment, stream_recognizing_data = feed(bytes([byte]))
         if(fragment):
             for f in fragment:
                 collected_body[arena_idx] = f
                 arena_idx += 1
-
-    print(expected_body)
-    print(collected_body)
+    assert memoryview(stream_recognizing_data['url']['buffer'])[0:stream_recognizing_data['url']['length']] == b'/api/data'
+    assert stream_recognizing_data['methods']['guess'] == Methods.POST
     assert(expected_body == collected_body)            
     assert(result == ParserResult.BODY_PARSING_FINISHED)
+
+    
 
 test_parse(RAW_STREAM_CONST)
 test_parse(RAW_STREAM)
