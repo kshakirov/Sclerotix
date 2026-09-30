@@ -2,15 +2,17 @@ import socket
 import select
 from typing import Dict, Any
 import lib.parsing.factory as f
-from lib.handling.handler import resolve_handler, hash_bytes
-def stupid_universal_handler(arena_chunk):
-    pass
+import  lib.handling.handler as router
 
-handlers = {'universal_hanlder': stupid_universal_handler}
+def handle_get(req, arena=[]):
+    print(f"recognized data  is {req}")
+    response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+    return  response
+rs= {(f.hp.Methods.POST,b"/index.html"): handle_get}
 
 
 
-def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers):
+def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=rs):
     #response = b"HTTP/1.1 200 OK\r\n\r\n"
     # В run_server_epoll.py заменяем ответ на полноценный:
     response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
@@ -45,7 +47,7 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers)
             sessions.pop(fd, None)
 
     print(f"[Sclerotix Epoll Core] Event Loop started on {host}:{port}")
-
+    resolve_handler = router.make_router(routes)[0]
     try:
         while True:
             # Опрашиваем ядро (timeout -1 или 1 сек)
@@ -95,17 +97,16 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, handlers=handlers)
                         data = sock.recv(1024)
                         if data:
                             status, arena, recognizing_data = session['feed'](data)
-
+                            print(arena)
                             if status == f.ParserResult.NEED_MORE_DATA:
-                                if arena and session.get('handler'):
-                                    session['handler'](arena)
+                                pass
 
                             elif status == f.ParserResult.ERROR:
                                 clean_up_closed_connection(fd)
                                 
                             elif status == f.ParserResult.BODY_PARSING_FINISHED:
                                 if not session.get('handler'):
-                                    handler = resolve_handler(hash_bytes(recognizing_data), recognizing_data['methods']['guess'])
+                                    handler = resolve_handler(router.hash_bytes(recognizing_data), recognizing_data['methods']['guess'])
                                     session['handler'] = handler
                                 session['response'] = session['handler'](recognizing_data, arena)
                                 # Переключаем epoll сокет с чтения (EPOLLIN) на запись (EPOLLOUT)

@@ -5,7 +5,7 @@ import json
 import random
 
 # Данные, которые отправляем
-data = { "name" : [i * 10 for i in range(4096)]}
+data = { "name" : "Testing handler"}
 
 
 # Преобразуем в JSON-строку
@@ -23,7 +23,7 @@ headers = {
 
 # Отправляем запрос
 response = requests.post(
-    'http://localhost:8080/id/2',
+    'http://localhost:8080/index.html',
     headers=headers,
     data=bytes_data  # Важно: передаем байты, не json!
 )
