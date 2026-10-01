@@ -6,11 +6,11 @@ import  lib.handling.handler as router
 
 def handle_get(req, arena,finished):
     if(finished):
-        print(f"recognized data  is {req}")
+        print(f"handle_get: req is parsed, data is recognized data, I am resolved as a handler, making respone")
         response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
         return  response
     else:
-        print("accumulating arena don't now how yet closure ?")
+        print("handle_get: I am resolved as a handler, body is not yet parsed, accumulating arena don't now how yet closure ?")
               
 rs= {(f.hp.Methods.POST,b"/index.html"): handle_get}
 

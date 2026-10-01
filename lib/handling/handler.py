@@ -7,7 +7,6 @@ def hash_bytes(recognizing_data):
     return bytes(memoryview(recognizing_data['url']['buffer'][0:recognizing_data['url']['length']]))
 
 
-
 def make_router(routes={}):
     ROUTES = routes
     #for the time being later can be parametrize
