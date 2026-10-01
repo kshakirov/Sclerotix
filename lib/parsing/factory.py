@@ -35,7 +35,8 @@ def make_streaming_request_parser():
                                  },
                                   'url': {
                                         'buffer': bytearray(MAX_URL_LENGTH),  # Заранее выделенный буфер нужного размера
-                                        'length': 0                 # Текущая длина записанного URL
+                                        'length': 0,                 # Текущая длина записанного URL
+                                        'done': False
                                   }};
 
       def feed(input_fragment):
@@ -60,6 +61,7 @@ def make_streaming_request_parser():
               body_fragment_offset = header_stream_offset - previous_header_stream_offset
               found_header = None
               if header_parser_state == hp.HeaderState.SUCCESS:
+                  stream_recognizing_data['url']['done'] = True
 #                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
                   if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.TRANSFER_ENCODING:
                       body_parser_state = p.State.EXPECT_CHUNK_SIZE

@@ -4,10 +4,14 @@ from typing import Dict, Any
 import lib.parsing.factory as f
 import  lib.handling.handler as router
 
-def handle_get(req, arena=[]):
-    print(f"recognized data  is {req}")
-    response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
-    return  response
+def handle_get(req, arena,finished):
+    if(finished):
+        print(f"recognized data  is {req}")
+        response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+        return  response
+    else:
+        print("accumulating arena don't now how yet closure ?")
+              
 rs= {(f.hp.Methods.POST,b"/index.html"): handle_get}
 
 
@@ -97,18 +101,18 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=rs):
                         data = sock.recv(1024)
                         if data:
                             status, arena, recognizing_data = session['feed'](data)
-                            print(arena)
-                            if status == f.ParserResult.NEED_MORE_DATA:
-                                pass
-
-                            elif status == f.ParserResult.ERROR:
-                                clean_up_closed_connection(fd)
-                                
-                            elif status == f.ParserResult.BODY_PARSING_FINISHED:
-                                if not session.get('handler'):
+                            if not session.get('handler'):
+                                if recognizing_data['url']['done']:
                                     handler = resolve_handler(router.hash_bytes(recognizing_data), recognizing_data['methods']['guess'])
                                     session['handler'] = handler
-                                session['response'] = session['handler'](recognizing_data, arena)
+                            if status == f.ParserResult.NEED_MORE_DATA:
+                                if session.get('handler'):
+                                    session['handler'](recognizing_data, arena, False)
+                            elif status == f.ParserResult.ERROR:
+                                clean_up_closed_connection(fd)
+                            elif status == f.ParserResult.BODY_PARSING_FINISHED:
+                                if session.get('handler'):
+                                    session['response'] = session['handler'](recognizing_data, arena, True)
                                 # Переключаем epoll сокет с чтения (EPOLLIN) на запись (EPOLLOUT)
                                 epoll.modify(fd, select.EPOLLOUT)
 
