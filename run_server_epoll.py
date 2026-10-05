@@ -4,7 +4,7 @@ from typing import Dict, Any
 import lib.parsing.factory as f
 import  lib.handling.handler as router
 
-def handle_get(req, arena,finished):
+def handle_get(req, arena,finished, ctx):
     if(finished):
         print(f"handle_get: req is parsed, data is recognized data, I am resolved as a handler, making respone")
         response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
@@ -75,7 +75,8 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=rs):
                                 "socket": client_socket,
                                 "addr": client_addr,
                                 "feed": f.make_streaming_request_parser(),
-                                "response": None
+                                "response": None,
+                                "ctx": {}
 
                             }
                         except BlockingIOError:
@@ -107,12 +108,12 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=rs):
                                     session['handler'] = handler
                             if status == f.ParserResult.NEED_MORE_DATA:
                                 if session.get('handler'):
-                                    session['handler'](recognizing_data, arena, False)
+                                    session['handler'](recognizing_data, arena, False, session['ctx'])
                             elif status == f.ParserResult.ERROR:
                                 clean_up_closed_connection(fd)
                             elif status == f.ParserResult.BODY_PARSING_FINISHED:
                                 if session.get('handler'):
-                                    session['response'] = session['handler'](recognizing_data, arena, True)
+                                    session['response'] = session['handler'](recognizing_data, arena, True, session['ctx'])
                                 # Переключаем epoll сокет с чтения (EPOLLIN) на запись (EPOLLOUT)
                                 epoll.modify(fd, select.EPOLLOUT)
 

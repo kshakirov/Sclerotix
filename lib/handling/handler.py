@@ -18,7 +18,7 @@ def make_router(routes={}):
     b"\r\n"
     b"Not Found"
     )
-    def no_route(req,arena,finished):
+    def no_route(req,arena,finished,ctx):
         return RESP_404_NOT_FOUND
     def resolve_handler(url, method):
         found_url = ROUTES.get((method, url), no_route)
