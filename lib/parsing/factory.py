@@ -18,20 +18,31 @@ class ContentHeader(Enum):
 
 def make_streaming_request_parser():
       input_buffer = bytearray()
-      input_offset = 0
+      header_stream_offset = 0
       body_parser_state = p.State.EXPECT_CHUNK_SIZE
       body_signal = p.NetworkInput.CHUNK_DATA_EMPTY
       body_current_value=0
-      arena = bytearray(32)
+      arena = bytearray(64 * 1024)
+      arena_view= memoryview(arena)
       arena_offset=0
       phase = Phase.HEADERS
       offset_table = array("i")
       header_parser_state=hp.HeaderState.METHOD
       next_offset_id=6
+      MAX_URL_LENGTH = 2048
+      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'content_length': 0},'methods':{'guess': None, 'matched_index':0}, 'config': {
+                                       'max_url_length': MAX_URL_LENGTH  # Лимит пользователя
+                                 },
+                                  'url': {
+                                        'buffer': bytearray(MAX_URL_LENGTH),  # Заранее выделенный буфер нужного размера
+                                        'length': 0,                 # Текущая длина записанного URL
+                                        'done': False
+                                  }};
 
       def feed(input_fragment):
-          input_buffer.extend(input_fragment)
-          nonlocal input_offset
+          input_buffer = input_fragment
+          body_fragment_offset = 0
+          nonlocal header_stream_offset
           nonlocal body_parser_state
           nonlocal body_signal
           nonlocal body_current_value
@@ -41,64 +52,70 @@ def make_streaming_request_parser():
           nonlocal header_parser_state
           nonlocal offset_table
           nonlocal arena
+          nonlocal arena_view
+          nonlocal stream_recognizing_data
           if phase == Phase.HEADERS:
 
-              input_offset, offset_table,header_parser_state, next_offset_id = hp.parse_req_header(input_fragment,input_offset, offset_table, header_parser_state, next_offset_id)
+              previous_header_stream_offset = header_stream_offset
+              header_stream_offset, offset_table,header_parser_state, next_offset_id,stream_recognizing_data = hp.parse_req_header(input_fragment,header_stream_offset, offset_table, header_parser_state, next_offset_id,stream_recognizing_data)
+              body_fragment_offset = header_stream_offset - previous_header_stream_offset
               found_header = None
               if header_parser_state == hp.HeaderState.SUCCESS:
-                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
-                  if h_start and h_end:
-                      if hp.is_transfer_encoding(offset_table, input_buffer):
-                          body_parser_state = p.State.EXPECT_CHUNK_SIZE
-                          phase = Phase.BODY
-                          found_header = ContentHeader.TRANSFER_ENCODING
-                      else:
-                          return ParserResult.ERROR, None
+                  stream_recognizing_data['url']['done'] = True
+#                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
+                  if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.TRANSFER_ENCODING:
+                      body_parser_state = p.State.EXPECT_CHUNK_SIZE
+                      phase = Phase.BODY
+                      found_header = ContentHeader.TRANSFER_ENCODING
+
                       
                       #print(f"Success")
-                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
-                  if h_start and h_end:
+#                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
+                  if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.CONTENT_LENGTH:
                       body_parser_state = p.State.PARSE_HEADERS# dont' remember which must be
                       body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH
-                      body_current_value = hp.get_content_length_if_content_length(offset_table, input_buffer) # value from header must be parsed here
+                      body_current_value =  stream_recognizing_data['headers']['content_length']# value from header must be parsed here
                       phase = Phase.BODY
 
                       if found_header == ContentHeader.TRANSFER_ENCODING:
-                          return ParserResult.ERROR, None
+                          return ParserResult.ERROR, None, stream_recognizing_data
                       else:
                           found_header= ContentHeader.CONTENT_LENGTH
 
-                      arena = bytearray(body_current_value)
+                          #not needed any more   arena = bytearray(body_current_value)
                    # here comes checking for empty body later         
 
                   if not found_header:
                       #means no body interesting for us
-                      return ParserResult.BODY_PARSING_FINISHED, None 
+                      return ParserResult.BODY_PARSING_FINISHED, None , stream_recognizing_data
                   
               elif header_parser_state == hp.HeaderState.ERROR:
                   #do exit for later left
-                  return ParserResult.ERROR, None
+                  return ParserResult.ERROR, None, stream_recognizing_data
               
               else:
                   #print(header_parser_state)
-                  return ParserResult.NEED_MORE_DATA, None
+                  return ParserResult.NEED_MORE_DATA, None, stream_recognizing_data
 
           if phase == Phase.BODY:
-              if len(input_buffer) > len(arena):
-                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
-              body_parser_state, body_signal, input_offset, body_current_value, arena_offset= p.run_engine(
-                  body_parser_state,body_signal, body_current_value, input_buffer, input_offset, arena,arena_offset,trace_enabled=True
+#              if len(input_buffer) > len(arena):
+#                  arena.extend(bytearray(len(input_buffer) - len(arena))) #not very efficient for thet time being
+              body_parser_state, body_signal, body_fragment_offset, body_current_value, arena_offset= p.run_engine(
+                  body_parser_state,body_signal, body_current_value, input_buffer, body_fragment_offset, arena,arena_offset,trace_enabled=False
     )
-              print(f"FFFFF {body_parser_state}")
+              #print(f"FFFFF {body_parser_state}")
               match body_parser_state:
                   case p.State.SUCCESS:
-                      return ParserResult.BODY_PARSING_FINISHED, arena[:arena_offset]
+                      fragment = arena_view[:arena_offset]
+                      arena_offset = 0
+                      return ParserResult.BODY_PARSING_FINISHED, fragment, stream_recognizing_data
                   case p.State.ERROR:
-                      return ParserResult.ERROR, None
+                      return ParserResult.ERROR, None, stream_recognizing_data
                   case _ :
-                      return ParserResult.NEED_MORE_DATA, arena
+                      fragment = arena_view[:arena_offset]
+                      arena_offset = 0
+                      return ParserResult.NEED_MORE_DATA, fragment, stream_recognizing_data
               
 
       return feed
-
 

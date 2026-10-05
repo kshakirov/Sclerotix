@@ -1,7 +1,7 @@
 # 🌌 Sclerotix (Склеротикс)
 
 > **Register Automaton Powered HTTP Server & Mini-Framework**
-> Built from scratch on Python 3.12 async sockets with formal model verification.
+> Built from scratch on Python 3.12, Linux epoll, and formally modelled automata.
 
 ## 🧱 Computer Science Passport
 * **Control Core (`transition`)**: Deterministic Finite Automaton (DFA), Type-3 Regular Grammar.
@@ -10,7 +10,5 @@
 
 ## 🚀 Quick Start
 ```bash
-python3 run_server.py
+python3 run_server_epoll.py
 ```
-
-
