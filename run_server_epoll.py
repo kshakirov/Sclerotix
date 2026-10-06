@@ -4,6 +4,8 @@ from typing import Dict, Any
 import lib.parsing.factory as f
 import lib.handling.handler as router
 
+ACCEPT_BUDGET = 64
+
 RESPONSE_OK = memoryview(
     b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
 )
@@ -56,9 +58,11 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=ROUTES):
                 # A. Новое подключение на мастер-сокете
                 # ----------------------------------------------------
                 if fd == server_fd:
-                    while True:
+                    accepted_connections = 0
+                    while accepted_connections < ACCEPT_BUDGET:
                         try:
                             client_socket, client_addr = server_socket.accept()
+                            accepted_connections += 1
                             client_socket.setblocking(False)
                             c_fd = client_socket.fileno()
 
