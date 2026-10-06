@@ -95,10 +95,13 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                  next_offset_id += 1
                  state = HeaderState.HEADER_VALUE
                  counter += 1
+                 stream_recognizing_data['headers']['current_header'] = None
                  if stream_recognizing_data['headers']['fixed_content_mattch']==14:
                      stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.CONTENT_LENGTH
+                     stream_recognizing_data['headers']['current_header'] = ParserRequiredHeaders.CONTENT_LENGTH
                  if stream_recognizing_data['headers']['chunk_content_match']==17 :
                      stream_recognizing_data['headers']['content_type'] = ParserRequiredHeaders.TRANSFER_ENCODING
+                     stream_recognizing_data['headers']['current_header'] = ParserRequiredHeaders.TRANSFER_ENCODING
 
                  stream_recognizing_data['headers']['fixed_content_mattch'] = 0
                  stream_recognizing_data['headers']['chunk_content_match'] =0
@@ -137,10 +140,11 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
             case HeaderState.HEADER_VALUE if input_fragment[counter]==13:
                 offset_table.insert(next_offset_id, counter + input_offset)
                 next_offset_id += 1
+                stream_recognizing_data['headers']['current_header'] = None
                 state = HeaderState.EXPECT_CRLF
                 counter += 1
             case HeaderState.HEADER_VALUE:
-                if stream_recognizing_data['headers']['content_type'] == ParserRequiredHeaders.CONTENT_LENGTH:
+                if stream_recognizing_data['headers']['current_header'] == ParserRequiredHeaders.CONTENT_LENGTH:
                     if input_fragment[counter] > 47 and input_fragment[counter] < 58:
                         stream_recognizing_data['headers']['content_length'] = stream_recognizing_data['headers']['content_length'] * 10 + input_fragment[counter] - 48
 

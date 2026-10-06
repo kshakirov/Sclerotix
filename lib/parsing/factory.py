@@ -30,7 +30,7 @@ def make_streaming_request_parser():
       header_parser_state=hp.HeaderState.METHOD
       next_offset_id=6
       MAX_URL_LENGTH = 2048
-      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'content_length': 0},'methods':{'guess': None, 'matched_index':0}, 'config': {
+      stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'current_header': None, 'content_length': 0},'methods':{'guess': None, 'matched_index':0}, 'config': {
                                        'max_url_length': MAX_URL_LENGTH  # Лимит пользователя
                                  },
                                   'url': {
@@ -118,4 +118,3 @@ def make_streaming_request_parser():
               
 
       return feed
-
