@@ -48,3 +48,5 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Local performance samples and reports
+/var/performance/
