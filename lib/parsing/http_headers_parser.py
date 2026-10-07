@@ -1,5 +1,5 @@
 from enum import Enum
-
+from lib.utils.hashing import OFFSET_BASIS, sx_hash
 
 class HeaderState(Enum):
     METHOD=1
@@ -35,7 +35,8 @@ def parse_req_header(input_fragment, input_offset, state, stream_recognizing_dat
                  if error:
                      state = error
                      break
-
+                 stream_recognizing_data['handler']['hash'] =sx_hash(OFFSET_BASIS,stream_recognizing_data['methods']['guess'].value)
+                 stream_recognizing_data['handler']['hash'] =sx_hash(stream_recognizing_data['handler']['hash'],0)
 
                  counter+=1
                  state=HeaderState.REQURI
@@ -59,6 +60,7 @@ def parse_req_header(input_fragment, input_offset, state, stream_recognizing_dat
                 if i < stream_recognizing_data['config']['max_url_length']:
                     stream_recognizing_data['url']['buffer'][i] = input_fragment[counter]
                     stream_recognizing_data['url']['length'] = i + 1
+                    stream_recognizing_data['handler']['hash'] =sx_hash(stream_recognizing_data['handler']['hash'],input_fragment[counter])
                 else:
                     state = HeaderState.ERROR
                 counter+=1
