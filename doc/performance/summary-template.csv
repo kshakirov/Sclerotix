@@ -1,0 +1,1 @@
+started_at_utc,date_utc,commit,tag,dirty,host_id,python_version,vegeta_version,request_id,method,path,body_bytes,expected_status,rate_rps,duration_s,workers,connections,keepalive,run_index,sample_n,valid,success_ratio,mean_ns,stddev_ns,min_ns,p50_ns,p90_ns,p95_ns,p99_ns,max_ns,throughput_rps,raw_csv,notes
