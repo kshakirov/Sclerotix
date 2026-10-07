@@ -1,6 +1,7 @@
 from lib.parsing.http_headers_parser import parse_req_header, HeaderState,  ParserRequiredHeaders, Methods
 from array import array
 from math import floor,ceil
+from lib.utils.hashing import hash_route, OFFSET_BASIS
 
 payload =  b"POST /api/data HTTP/1.1\r\n"
 payload_cutA =  b"POST /api/dat"
@@ -42,7 +43,7 @@ def test_parse_header(payload):
                                   'url': {
                                         'buffer': bytearray(2048),  # Заранее выделенный буфер нужного размера
                                         'length': 0                 # Текущая длина записанного URL
-                                  }}
+                                  }, "handler": {"hash": 0}}
       for b in payload:
             input_offset, offset_table,state, next_offset_id, stream_recognizing_data = parse_req_header([b],input_offset, offset_table,state, next_offset_id, stream_recognizing_data)
       return offset_table, stream_recognizing_data
@@ -59,7 +60,7 @@ assert(data['headers']['content_type'] == ParserRequiredHeaders.TRANSFER_ENCODIN
 assert(data['methods']['guess'] == Methods.POST)
 assert data['url']['length'] == len("/api/v1/status"), f"dont match {len("/api/v1/status")} and {data['url']['length']}"
 assert memoryview(data['url']['buffer'])[0:data['url']['length']] == b"/api/v1/status", f"dont match {data['url']['buffer']} and {b'/api/v1/status'}"
-
+assert data['handler']['hash'] == hash_route(OFFSET_BASIS, Methods.POST,b"/api/v1/status")
 
 r,data = test_parse_header(RAW_STREAM)
 
@@ -67,3 +68,4 @@ assert(data['headers']['content_type'] == ParserRequiredHeaders.CONTENT_LENGTH)
 assert(data['methods']['guess'] == Methods.PUT)
 assert data['url']['length'] == len("/api/data"), f"dont match 100 and {data['url']['length']}"
 assert memoryview(data['url']['buffer'])[0:data['url']['length']] == b"/api/data", f"dont match {data['url']['buffer']} and {b'/api/data'}"
+assert data['handler']['hash'] == hash_route(OFFSET_BASIS, Methods.PUT,b"/api/data")
