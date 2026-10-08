@@ -102,7 +102,7 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=ROUTES):
                             status, arena, recognizing_data = session['feed'](data)
                             if not session.get('handler'):
                                 if recognizing_data['url']['done']:
-                                    handler = resolve_handler(router.hash_bytes(recognizing_data), recognizing_data['methods']['guess'])
+                                    handler = resolve_handler(router.hash_bytes(recognizing_data), recognizing_data['url']['buffer'], recognizing_data['methods']['guess'], recognizing_data['url']['length'])
                                     session['handler'] = handler
                             if status == f.ParserResult.NEED_MORE_DATA:
                                 if session.get('handler'):
