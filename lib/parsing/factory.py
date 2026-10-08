@@ -37,7 +37,7 @@ def make_streaming_request_parser():
                                         'buffer': bytearray(MAX_URL_LENGTH),  # Заранее выделенный буфер нужного размера
                                         'length': 0,                 # Текущая длина записанного URL
                                         'done': False
-                                  }};
+                                  }, "handler": {"hash": 0}};
 
       def feed(input_fragment):
           input_buffer = input_fragment
