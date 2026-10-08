@@ -1,8 +1,8 @@
 # Temporary baseline before the streaming route hash experiment.
 from lib.utils.hashing import hash_routes,OFFSET_BASIS,hash_route
 def hash_bytes(recognizing_data):
-    url = recognizing_data['url']
-    return bytes(memoryview(url['buffer'])[:url['length']])
+    return  recognizing_data['handler']['hash']
+
 
 
 def make_router(routes):
@@ -19,13 +19,13 @@ def make_router(routes):
     def no_route(request_state, arena_fragment, finished, context):
         return response_not_found
 
-    def resolve_handler(hash, url, method):
+    def resolve_handler(hash, url, method, url_length):
         if hash in routes_by_key:
             #here we go whith the performance issue for for but
             bucket = routes_by_key[hash]
             for b in bucket:
                 m,u,h = b
-                if u == url and m == method:
+                if url_length == len(u) and m == method and url.startswith(u, 0, url_length):
                     return h
 
             return no_route
