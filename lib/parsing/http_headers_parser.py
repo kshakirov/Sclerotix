@@ -1,6 +1,4 @@
 from enum import Enum
-from array import array
-from math import floor,ceil
 
 
 class HeaderState(Enum):
@@ -27,19 +25,11 @@ class ParserRequiredHeaders(Enum):
     CONTENT_LENGTH=b"content-length"
     TRANSFER_ENCODING=b"transfer-encoding"
 
-def parse_req_header(input_fragment, input_offset, offset_table, state, next_offset_id,stream_recognizing_data):
-    #state =HeaderState.METHOD
-    #offset_table = array('i') # на время только
-    #next_offset_id =6
-
-
+def parse_req_header(input_fragment, input_offset, state, stream_recognizing_data):
     counter = 0
     while counter < len(input_fragment):
         match state:
             case HeaderState.METHOD if input_fragment[counter] == 32:
-                 offset_table.insert(0,0)
-                 offset_table.insert(1, counter + input_offset)
-                 offset_table.insert(2, counter + 1 +input_offset)
                  #an example
                  error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
                  if error:
@@ -62,8 +52,6 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 # здесь будет защита от некорректного метода или попытки ддос атаки
 
             case HeaderState.REQURI if input_fragment[counter]==32:
-                 offset_table.insert(3,counter + input_offset)
-                 offset_table.insert(4, counter + 1 + input_offset)
                  counter+=1
                  state=HeaderState.REQVERSION
             case HeaderState.REQURI:
@@ -76,23 +64,16 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 counter+=1
 
             case HeaderState.REQVERSION if input_fragment[counter]==13:
-                 offset_table.insert(5,counter + input_offset)
                  counter+=1
                  state=HeaderState.EXPECT_CRLF
             case HeaderState.REQVERSION:
                 counter+=1
             case HeaderState.EXPECT_CRLF if input_fragment[counter]==10:
-                 offset_table.insert(next_offset_id, counter + 1 + input_offset)
                  counter+=1
-                 next_offset_id += 1
                  stream_recognizing_data['headers']['fixed_content_mattch'] =0
                  stream_recognizing_data['headers']['chunk_content_match'] =0
                  state=HeaderState.HEADER_NAME
             case HeaderState.HEADER_NAME if input_fragment[counter]==58:
-                 offset_table.insert(next_offset_id, counter + input_offset)
-                 next_offset_id += 1
-                 offset_table.insert(next_offset_id, counter + 1 + input_offset)
-                 next_offset_id += 1
                  state = HeaderState.HEADER_VALUE
                  counter += 1
                  stream_recognizing_data['headers']['current_header'] = None
@@ -138,8 +119,6 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
 
 
             case HeaderState.HEADER_VALUE if input_fragment[counter]==13:
-                offset_table.insert(next_offset_id, counter + input_offset)
-                next_offset_id += 1
                 stream_recognizing_data['headers']['current_header'] = None
                 state = HeaderState.EXPECT_CRLF
                 counter += 1
@@ -157,7 +136,7 @@ def parse_req_header(input_fragment, input_offset, offset_table, state, next_off
                 state= HeaderState.ERROR
                 break
 
-    return input_offset + counter, offset_table, state, next_offset_id, stream_recognizing_data
+    return input_offset + counter, state, stream_recognizing_data
 
 
 

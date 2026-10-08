@@ -1,5 +1,4 @@
 from enum import Enum
-from array import array
 import lib.parsing.http_parse_automaton as p
 import lib.parsing.http_headers_parser as hp
 class Phase(Enum):
@@ -26,9 +25,7 @@ def make_streaming_request_parser():
       arena_view= memoryview(arena)
       arena_offset=0
       phase = Phase.HEADERS
-      offset_table = array("i")
       header_parser_state=hp.HeaderState.METHOD
-      next_offset_id=6
       MAX_URL_LENGTH = 2048
       stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix': False,    'fixed_content_mattch':0, 'fixed_content_failed_prefix': False, 'content_type': None, 'current_header': None, 'content_length': 0},'methods':{'guess': None, 'matched_index':0}, 'config': {
                                        'max_url_length': MAX_URL_LENGTH  # Лимит пользователя
@@ -48,21 +45,18 @@ def make_streaming_request_parser():
           nonlocal body_current_value
           nonlocal arena_offset
           nonlocal phase
-          nonlocal next_offset_id
           nonlocal header_parser_state
-          nonlocal offset_table
           nonlocal arena
           nonlocal arena_view
           nonlocal stream_recognizing_data
           if phase == Phase.HEADERS:
 
               previous_header_stream_offset = header_stream_offset
-              header_stream_offset, offset_table,header_parser_state, next_offset_id,stream_recognizing_data = hp.parse_req_header(input_fragment,header_stream_offset, offset_table, header_parser_state, next_offset_id,stream_recognizing_data)
+              header_stream_offset, header_parser_state, stream_recognizing_data = hp.parse_req_header(input_fragment, header_stream_offset, header_parser_state, stream_recognizing_data)
               body_fragment_offset = header_stream_offset - previous_header_stream_offset
               found_header = None
               if header_parser_state == hp.HeaderState.SUCCESS:
                   stream_recognizing_data['url']['done'] = True
-#                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.TRANSFER_ENCODING.value)# later change to constant
                   if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.TRANSFER_ENCODING:
                       body_parser_state = p.State.EXPECT_CHUNK_SIZE
                       phase = Phase.BODY
@@ -70,7 +64,6 @@ def make_streaming_request_parser():
 
                       
                       #print(f"Success")
-#                  h_start, h_end = hp.get_headers(offset_table,input_buffer,ContentHeader.CONTENT_LENGTH.value)# later change to constant
                   if stream_recognizing_data['headers']['content_type']== hp.ParserRequiredHeaders.CONTENT_LENGTH:
                       body_parser_state = p.State.PARSE_HEADERS# dont' remember which must be
                       body_signal = p.NetworkInput.HEADERS_PARSED_CONTENT_LENGTH

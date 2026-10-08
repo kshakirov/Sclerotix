@@ -1,6 +1,4 @@
 from lib.parsing.http_headers_parser import parse_req_header, HeaderState,  ParserRequiredHeaders, Methods
-from array import array
-from math import floor,ceil
 
 payload =  b"POST /api/data HTTP/1.1\r\n"
 payload_cutA =  b"POST /api/dat"
@@ -29,8 +27,6 @@ RAW_STREAM = (
 
 def test_parse_header(payload):
       state =HeaderState.METHOD
-      offset_table = array('i') # на время только
-      next_offset_id =6
       input_offset = 0
       stream_recognizing_data = { 'headers': {'chunk_content_match':0, 'chunk_content_failed_prefix' : False,
                                               'fixed_content_match':0, 'fixed_content_failed_prefix': False,
@@ -44,8 +40,8 @@ def test_parse_header(payload):
                                         'length': 0                 # Текущая длина записанного URL
                                   }}
       for b in payload:
-            input_offset, offset_table,state, next_offset_id, stream_recognizing_data = parse_req_header([b],input_offset, offset_table,state, next_offset_id, stream_recognizing_data)
-      return offset_table, stream_recognizing_data
+            input_offset, state, stream_recognizing_data = parse_req_header([b], input_offset, state, stream_recognizing_data)
+      return stream_recognizing_data
 
 
 
@@ -53,7 +49,7 @@ def test_parse_header(payload):
 # r,data = is_transfer_encoding(test_parse_header(raw_get_request_wrong),raw_get_request_wrong)
 # assert(not r)
 
-r,data = test_parse_header(raw_get_request)
+data = test_parse_header(raw_get_request)
 
 assert(data['headers']['content_type'] == ParserRequiredHeaders.TRANSFER_ENCODING)
 assert(data['methods']['guess'] == Methods.POST)
@@ -61,7 +57,7 @@ assert data['url']['length'] == len("/api/v1/status"), f"dont match {len("/api/v
 assert memoryview(data['url']['buffer'])[0:data['url']['length']] == b"/api/v1/status", f"dont match {data['url']['buffer']} and {b'/api/v1/status'}"
 
 
-r,data = test_parse_header(RAW_STREAM)
+data = test_parse_header(RAW_STREAM)
 
 assert(data['headers']['content_type'] == ParserRequiredHeaders.CONTENT_LENGTH)
 assert(data['methods']['guess'] == Methods.PUT)
