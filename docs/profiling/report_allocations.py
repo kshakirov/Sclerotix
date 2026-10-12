@@ -34,7 +34,8 @@ def previous_profile():
 
 
 def read_stats(profile):
-    with tempfile.NamedTemporaryFile(suffix=".json") as output:
+    with tempfile.TemporaryDirectory() as temporary_directory:
+        output = Path(temporary_directory) / "stats.json"
         subprocess.run(
             [
                 str(MEMRAY),
@@ -43,14 +44,14 @@ def read_stats(profile):
                 "1000",
                 "--json",
                 "-o",
-                output.name,
+                str(output),
                 str(profile),
             ],
             check=True,
             stdout=subprocess.DEVNULL,
         )
-        output.seek(0)
-        return json.load(output)
+        with output.open(encoding="utf-8") as stats_file:
+            return json.load(stats_file)
 
 
 def focused_rows(stats, focus):
