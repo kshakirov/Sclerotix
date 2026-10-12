@@ -61,34 +61,96 @@
 
 ### Отчёты Memray
 
+Короткий отчёт по последнему профилю без ручного поиска `.bin`:
+
 ```bash
-BIN=~/.local/state/sclerotix-profile/sclerotix-allocations-TIMESTAMP.bin
-MEMRAY=~/.local/share/sclerotix-profile-venv/bin/memray
+./docs/profiling/report_allocations.py
 ```
 
-Общий оборот памяти, число аллокаций, пик и крупнейшие источники:
+По умолчанию выводятся только общий итог и аллокации из `enum.py`. Для другого
+механизма достаточно передать часть пути или имени:
 
 ```bash
-$MEMRAY stats -n 30 "$BIN"
+./docs/profiling/report_allocations.py hashing.py
 ```
 
-Функции, определившие пиковое потребление памяти:
+Сравнение последнего профиля с конкретным baseline:
 
 ```bash
-$MEMRAY summary -r 50 "$BIN"
+./docs/profiling/report_allocations.py enum.py --baseline /path/to/baseline.bin
 ```
 
-Короткоживущие аллокации:
+Если baseline является предпоследним профилем, путь не нужен:
 
 ```bash
-$MEMRAY summary --temporary-allocations -r 50 "$BIN"
-$MEMRAY tree --temporary-allocations "$BIN"
+./docs/profiling/report_allocations.py enum.py --previous
 ```
 
-Машиночитаемая сводка:
+Отчёт сам печатает таблицу `CURRENT`, таблицу `BASELINE` и дельту по каждой
+строке выбранного механизма.
+
+Ниже остаются команды для углублённого ручного анализа.
 
 ```bash
-$MEMRAY stats -n 100 --json -o allocation-stats.json "$BIN"
+PROFILE_BIN="$(ls -1t "$HOME"/.local/state/sclerotix-profile/sclerotix-allocations-*.bin | head -n 1)"
+PROFILE_MEMRAY="$HOME/.local/share/sclerotix-profile-venv/bin/memray"
+```
+
+`PROFILE_BIN` автоматически указывает на последний созданный профиль. Вручную
+подставлять timestamp не требуется.
+
+### Вопрос: сколько всего было аллокаций?
+
+```bash
+"$PROFILE_MEMRAY" stats -n 30 "$PROFILE_BIN"
+```
+
+Ответ находится в начале отчёта:
+
+```text
+Total allocations
+Total memory allocated
+Peak memory usage
+```
+
+Для сравнения двух реализаций основные показатели — `Total allocations` и
+`Total memory allocated`. Если число запросов в прогонах различается, оба
+показателя сначала делятся на фактическое число запросов.
+
+### Вопрос: какие места создали основной allocation churn?
+
+```bash
+"$PROFILE_MEMRAY" stats -n 30 "$PROFILE_BIN"
+```
+
+Ответ находится в разделах:
+
+```text
+Top allocating locations (by size)
+Top allocating locations (by number of allocations)
+Top allocating modules
+```
+
+### Вопрос: какие функции определили пиковое потребление памяти?
+
+```bash
+"$PROFILE_MEMRAY" summary -r 50 "$PROFILE_BIN"
+```
+
+`summary` не отвечает на вопрос об общем числе аллокаций. Он показывает
+распределение памяти, живой в выбранной точке отчёта.
+
+### Вопрос: где создаются короткоживущие объекты?
+
+```bash
+"$PROFILE_MEMRAY" summary --temporary-allocations -r 50 "$PROFILE_BIN"
+"$PROFILE_MEMRAY" tree --temporary-allocations "$PROFILE_BIN"
+```
+
+### Вопрос: как получить машиночитаемую сводку?
+
+```bash
+"$PROFILE_MEMRAY" stats -n 100 --json -o allocation-stats.json "$PROFILE_BIN"
 ```
 
 Обычный flame graph Memray показывает память, живую на пике. Для интенсивного оборота короткоживущих объектов следует использовать `stats` и отчёты с `--temporary-allocations`. Режим `--leaks` отвечает на отдельный вопрос об объектах, оставшихся жить к завершению записи.

@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+
+import argparse
+import json
+import subprocess
+import tempfile
+from pathlib import Path
+
+
+PROFILE_DIR = Path.home() / ".local/state/sclerotix-profile"
+MEMRAY = Path.home() / ".local/share/sclerotix-profile-venv/bin/memray"
+
+
+def newest_profile():
+    profiles = sorted(
+        PROFILE_DIR.glob("sclerotix-allocations-*.bin"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    if not profiles:
+        raise SystemExit(f"No allocation profiles found in {PROFILE_DIR}")
+    return profiles[0]
+
+
+def previous_profile():
+    profiles = sorted(
+        PROFILE_DIR.glob("sclerotix-allocations-*.bin"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    if len(profiles) < 2:
+        raise SystemExit(f"Fewer than two allocation profiles found in {PROFILE_DIR}")
+    return profiles[1]
+
+
+def read_stats(profile):
+    with tempfile.NamedTemporaryFile(suffix=".json") as output:
+        subprocess.run(
+            [
+                str(MEMRAY),
+                "stats",
+                "-n",
+                "1000",
+                "--json",
+                "-o",
+                output.name,
+                str(profile),
+            ],
+            check=True,
+            stdout=subprocess.DEVNULL,
+        )
+        output.seek(0)
+        return json.load(output)
+
+
+def focused_rows(stats, focus):
+    rows = {}
+    for row in stats["top_allocations_by_count"]:
+        if focus in row["location"]:
+            rows.setdefault(row["location"], {})["count"] = row["count"]
+    for row in stats["top_allocations_by_size"]:
+        if focus in row["location"]:
+            rows.setdefault(row["location"], {})["size"] = row["size"]
+    return rows
+
+
+def print_report(label, profile, stats, focus):
+    print(f"\n{label}: {profile}")
+    print(f"Total allocations:     {stats['total_num_allocations']:,}")
+    print(f"Total bytes allocated: {stats['total_bytes_allocated']:,}")
+    print(f"\nFocus: {focus}")
+    print(f"{'location':70} {'allocations':>15} {'bytes':>15}")
+    for location, values in focused_rows(stats, focus).items():
+        print(
+            f"{location:70} "
+            f"{values.get('count', 0):>15,} "
+            f"{values.get('size', 0):>15,}"
+        )
+
+
+def print_delta(current, baseline, focus):
+    current_rows = focused_rows(current, focus)
+    baseline_rows = focused_rows(baseline, focus)
+    locations = sorted(current_rows.keys() | baseline_rows.keys())
+
+    print("\nDELTA CURRENT - BASELINE")
+    print(
+        f"Total allocations:     "
+        f"{current['total_num_allocations'] - baseline['total_num_allocations']:+,}"
+    )
+    print(
+        f"Total bytes allocated: "
+        f"{current['total_bytes_allocated'] - baseline['total_bytes_allocated']:+,}"
+    )
+    print(f"\n{'location':70} {'allocations':>15} {'bytes':>15}")
+    for location in locations:
+        current_values = current_rows.get(location, {})
+        baseline_values = baseline_rows.get(location, {})
+        count_delta = current_values.get("count", 0) - baseline_values.get("count", 0)
+        size_delta = current_values.get("size", 0) - baseline_values.get("size", 0)
+        print(f"{location:70} {count_delta:>+15,} {size_delta:>+15,}")
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Print a focused allocation report from Memray profiles."
+    )
+    parser.add_argument("focus", nargs="?", default="enum.py")
+    parser.add_argument("--profile", type=Path, default=None)
+    parser.add_argument("--baseline", type=Path, default=None)
+    parser.add_argument("--previous", action="store_true")
+    args = parser.parse_args()
+
+    if args.baseline and args.previous:
+        parser.error("use either --baseline or --previous")
+
+    profile = args.profile or newest_profile()
+    current = read_stats(profile)
+    print_report("CURRENT", profile, current, args.focus)
+
+    baseline_profile = args.baseline
+    if args.previous:
+        baseline_profile = previous_profile()
+
+    if baseline_profile:
+        baseline = read_stats(baseline_profile)
+        print_report("BASELINE", baseline_profile, baseline, args.focus)
+        print_delta(current, baseline, args.focus)
+
+
+if __name__ == "__main__":
+    main()
