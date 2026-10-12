@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class HeaderState(Enum):
+class HeaderState:
     METHOD=1
     REQURI=2
     REQVERSION=3
