@@ -21,7 +21,7 @@ class Methods(Enum):
     GET=6
     Pstar=7
 
-class ParserRequiredHeaders(Enum):
+class ParserRequiredHeaders:
     CONTENT_LENGTH=b"content-length"
     TRANSFER_ENCODING=b"transfer-encoding"
 
@@ -101,13 +101,13 @@ def parse_req_header(input_fragment, input_offset, state, stream_recognizing_dat
                 fcm = stream_recognizing_data['headers']['fixed_content_mattch']
                 ccm = stream_recognizing_data['headers']['chunk_content_match']
                 #print(fcm, input_fragment[counter],ParserRequiredHeaders.CONTENT_LENGTH.value[fcm])
-                if  fcm < 14 and (input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm] or input_fragment[counter] + 32 == ParserRequiredHeaders.CONTENT_LENGTH.value[fcm]) and not stream_recognizing_data['headers']['fixed_content_failed_prefix']:
+                if  fcm < 14 and (input_fragment[counter] == ParserRequiredHeaders.CONTENT_LENGTH[fcm] or input_fragment[counter] + 32 == ParserRequiredHeaders.CONTENT_LENGTH[fcm]) and not stream_recognizing_data['headers']['fixed_content_failed_prefix']:
                     stream_recognizing_data['headers']['fixed_content_mattch'] += 1
                 else:
                     stream_recognizing_data['headers']['fixed_content_mattch'] =0
                     stream_recognizing_data['headers']['fixed_content_failed_prefix'] =True
 
-                if  ccm < 17 and (input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm] or input_fragment[counter] + 32 == ParserRequiredHeaders.TRANSFER_ENCODING.value[ccm]) and not stream_recognizing_data['headers']['chunk_content_failed_prefix']:
+                if  ccm < 17 and (input_fragment[counter] == ParserRequiredHeaders.TRANSFER_ENCODING[ccm] or input_fragment[counter] + 32 == ParserRequiredHeaders.TRANSFER_ENCODING[ccm]) and not stream_recognizing_data['headers']['chunk_content_failed_prefix']:
                     stream_recognizing_data['headers']['chunk_content_match'] += 1
 
                 else:
