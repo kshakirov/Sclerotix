@@ -65,13 +65,15 @@ def focused_rows(stats, focus):
     return rows
 
 
-def print_report(label, profile, stats, focus):
+def print_report(label, profile, stats, focus, min_count):
     print(f"\n{label}: {profile}")
     print(f"Total allocations:     {stats['total_num_allocations']:,}")
     print(f"Total bytes allocated: {stats['total_bytes_allocated']:,}")
     print(f"\nFocus: {focus}")
     print(f"{'location':70} {'allocations':>15} {'bytes':>15}")
     for location, values in focused_rows(stats, focus).items():
+        if values.get("count", 0) < min_count:
+            continue
         print(
             f"{location:70} "
             f"{values.get('count', 0):>15,} "
@@ -79,7 +81,7 @@ def print_report(label, profile, stats, focus):
         )
 
 
-def print_delta(current, baseline, focus):
+def print_delta(current, baseline, focus, min_count):
     current_rows = focused_rows(current, focus)
     baseline_rows = focused_rows(baseline, focus)
     locations = sorted(current_rows.keys() | baseline_rows.keys())
@@ -97,6 +99,10 @@ def print_delta(current, baseline, focus):
     for location in locations:
         current_values = current_rows.get(location, {})
         baseline_values = baseline_rows.get(location, {})
+        if max(
+            current_values.get("count", 0), baseline_values.get("count", 0)
+        ) < min_count:
+            continue
         count_delta = current_values.get("count", 0) - baseline_values.get("count", 0)
         size_delta = current_values.get("size", 0) - baseline_values.get("size", 0)
         print(f"{location:70} {count_delta:>+15,} {size_delta:>+15,}")
@@ -110,6 +116,7 @@ def main():
     parser.add_argument("--profile", type=Path, default=None)
     parser.add_argument("--baseline", type=Path, default=None)
     parser.add_argument("--previous", action="store_true")
+    parser.add_argument("--min-count", type=int, default=10_000)
     args = parser.parse_args()
 
     if args.baseline and args.previous:
@@ -117,7 +124,7 @@ def main():
 
     profile = args.profile or newest_profile()
     current = read_stats(profile)
-    print_report("CURRENT", profile, current, args.focus)
+    print_report("CURRENT", profile, current, args.focus, args.min_count)
 
     baseline_profile = args.baseline
     if args.previous:
@@ -125,8 +132,8 @@ def main():
 
     if baseline_profile:
         baseline = read_stats(baseline_profile)
-        print_report("BASELINE", baseline_profile, baseline, args.focus)
-        print_delta(current, baseline, args.focus)
+        print_report("BASELINE", baseline_profile, baseline, args.focus, args.min_count)
+        print_delta(current, baseline, args.focus, args.min_count)
 
 
 if __name__ == "__main__":
