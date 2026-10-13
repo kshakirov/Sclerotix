@@ -30,26 +30,130 @@ def parse_req_header(input_fragment, input_offset, state, stream_recognizing_dat
     length = len(input_fragment)
     while counter < length:
         match state:
-            case HeaderState.METHOD if input_fragment[counter] == 32:
-                 #an example
-                 error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
-                 if error:
-                     state = error
-                     break
+            # case HeaderState.METHOD if input_fragment[counter] == 32:
+            #      #an example
+            #      error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
+            #      if error:
+            #          state = error
+            #          break
 
 
-                 counter+=1
-                 state=HeaderState.REQURI
+            #      counter+=1
+            #      state=HeaderState.REQURI
 
             case HeaderState.METHOD:
-                error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
+                # error, guess, matched_index = method_recognizer(input_fragment[counter], stream_recognizing_data['methods']['matched_index'], stream_recognizing_data['methods']['guess'])
+                #inlining
+                matched_index = stream_recognizing_data['methods']['matched_index']
+                guess = stream_recognizing_data['methods']['guess']
+                error = None
+                b = input_fragment[counter]
+                match matched_index:
+                    case 0:
+                        match b:
+                            case 80:
+                                guess = Methods.Pstar
+                            case 71:
+                                guess = Methods.GET
+                            case 72:
+                                guess = Methods.HEAD
+                            case 68:
+                                guess = Methods.DELETE
+                            case _:
+                                error = HeaderState.ERROR
+                    case 1 if guess == Methods.Pstar:
+                        match b:
+                            case 85:
+                                guess = Methods.PUT
+                            case 79:
+                                guess = Methods.POST
+                            case 65:
+                                guess = Methods.PATCH
+                            case _:
+                            #    return HeaderState.ERROR, None,None
+                                error = HeaderState.ERROR
+                    case 1:
+                        match b:
+                            case 69:
+                                guess =guess
+                            case _:
+                                error = HeaderState.ERROR
+
+                    case 2:
+                        match b:
+                            case 84 if guess == Methods.GET:
+                                guess = Methods.GET
+                            case 84 if guess == Methods.PUT:
+                                guess = Methods.PUT
+                            case 76:
+                                guess =guess
+                            case 65:
+                                guess =guess
+                            case 83:
+                                guess=guess
+                            case _:
+                                error = HeaderState.ERROR
+#                                return HeaderState.ERROR, None, None
+                    case 3:
+                        match b:
+                            case 84 if guess==Methods.POST:
+                                guess = guess
+                            case 84:
+                                error = HeaderState.ERROR
+
+                            case 32 if guess==Methods.PUT or guess==Methods.GET:
+                                guess = guess
+
+                    case 4:
+                        match b:
+                            case _ if guess==Methods.PUT or guess==Methods.GET:
+                                error = HeaderState.ERROR
+                                #return HeaderState.ERROR, None, None
+                            case 32 if guess==Methods.POST:
+                                guess = guess
+                    case 5:
+                        match b:
+                            case _ if guess==Methods.POST:
+                                error = HeaderState.ERROR
+                                #return HeaderState.ERROR, None, None
+
+                    case 10:
+                        error = HeaderState.ERROR
+                        #return HeaderState.ERROR, None, None
+                #matched_index += 1
+               # return None, guess, matched_index
+
+            
+
+                
                 if error:
                     state = error
                     break
+
+                matched_index += 1
+                counter += 1
+
+                if b == 32:
+                   if (
+                        matched_index == 4
+                        and (guess == Methods.GET or guess == Methods.PUT)
+                    ) or (
+                        matched_index == 5
+                        and guess == Methods.POST
+                    ):
+                       state = HeaderState.REQURI
+                   else:
+                       state = HeaderState.ERROR
+                       break
                 else:
                     stream_recognizing_data['methods']['guess'] = guess
                     stream_recognizing_data['methods']['matched_index'] = matched_index
-                counter += 1;
+
+                    
+    # else:
+    #                 stream_recognizing_data['methods']['guess'] = guess
+    #                 stream_recognizing_data['methods']['matched_index'] = matched_index
+    #             counter += 1;
                 # здесь будет защита от некорректного метода или попытки ддос атаки
 
             case HeaderState.REQURI if input_fragment[counter]==32:
