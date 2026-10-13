@@ -35,13 +35,25 @@ require_command() {
 
 stop_server() {
     if [[ -n "$server_pid" ]] && kill -0 "$server_pid" 2>/dev/null; then
-        kill -INT "$server_pid" 2>/dev/null || true
+        kill -TERM "$server_pid" 2>/dev/null || true
+        for _ in {1..50}; do
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+                break
+            fi
+            sleep 0.1
+        done
+        if kill -0 "$server_pid" 2>/dev/null; then
+            printf 'Server did not stop after SIGTERM; sending SIGKILL\n' >&2
+            kill -KILL "$server_pid" 2>/dev/null || true
+        fi
         wait "$server_pid" 2>/dev/null || true
     fi
     server_pid=""
 }
 
-trap stop_server EXIT INT TERM
+trap stop_server EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 time_wait_count() {
     ss -tan state time-wait 2>/dev/null | awk 'NR > 1 { count += 1 } END { print count + 0 }'
