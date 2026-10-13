@@ -27,7 +27,7 @@ class ParserRequiredHeaders:
 
 def parse_req_header(input_fragment, input_offset, state, stream_recognizing_data):
     counter = 0
-    length = len(input_fragment):
+    length = len(input_fragment)
     while counter < length
         match state:
             case HeaderState.METHOD if input_fragment[counter] == 32:
