@@ -64,6 +64,28 @@ VEGETA_CPUS=4,5,10,11
 [baseline-remote-get-10k-2026-10-06.md](baseline-remote-get-10k-2026-10-06.md).
 Этот профиль является контрольным для эксперимента со streaming route hash.
 
+Полная серия этого профиля на `pmd-pims-aio` запускается одной командой
+из корня чистого рабочего дерева:
+
+```bash
+./docs/performance/run_remote_get_baseline.sh
+```
+
+Скрипт сам:
+
+- поднимает `ulimit -n` до `65535`;
+- закрепляет Sclerotix за CPU `3`, а Vegeta — за CPU `4,5,10,11`;
+- выполняет отдельный warm-up `5 s`;
+- ждёт возврата `TIME_WAIT` к фоновому уровню;
+- перезапускает сервер для каждого из пяти измеряемых прогонов;
+- отклоняет прогон, если есть не-`200` ответы или transport errors;
+- сохраняет raw-данные и metadata в `var/performance/raw/`;
+- строит `series-summary.csv` и `combined-summary.json` по пяти прогонам;
+- добавляет пять строк в локальную историю `var/performance/summary.csv`.
+
+Скрипт не останавливает Storm: это внешнее изменение состояния, которое
+выполняется вручную до запуска серии.
+
 Проверка POST после исправления области действия `Content-Length` записана в
 [post-validation-2026-10-06.md](post-validation-2026-10-06.md).
 
