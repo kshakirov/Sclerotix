@@ -303,6 +303,21 @@ def percentile(values, probability):
     return values[max(0, math.ceil(probability * len(values)) - 1)]
 
 summary = {
+    "schema_version": 1,
+    "profile": {
+        "name": "baseline_remote_get_10k_10s_port18082",
+        "host_id": rows[0]["metadata"]["HOST_ID"],
+        "request_id": rows[0]["metadata"]["REQUEST_ID"],
+        "port": int(rows[0]["metadata"]["PORT"]),
+        "rate_rps": 10000,
+        "duration_s": 10,
+        "runs": len(rows),
+        "workers": int(rows[0]["metadata"]["WORKERS"]),
+        "connections": int(rows[0]["metadata"]["CONNECTIONS"]),
+        "keepalive": False,
+        "server_cpu": int(rows[0]["metadata"]["SERVER_CPU"]),
+        "vegeta_cpus": rows[0]["metadata"]["VEGETA_CPUS"],
+    },
     "commit": commit,
     "sample_n": len(combined),
     "mean_ns": statistics.fmean(combined),
@@ -323,6 +338,7 @@ print(f"sample_n: {summary['sample_n']:,}")
 for name in ("mean_ns", "stddev_ns", "min_ns", "p50_ns", "p95_ns", "p99_ns", "max_ns"):
     print(f"{name[:-3]:8} {summary[name] / 1_000_000:.3f} ms")
 print(f"raw:      {series_dir}")
+print("compare:  ./docs/performance/compare_baseline.py")
 PY
 }
 

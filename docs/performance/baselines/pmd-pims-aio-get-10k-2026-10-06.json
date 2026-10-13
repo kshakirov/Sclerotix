@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "source": "docs/performance/baseline-remote-get-10k-2026-10-06.md",
+  "source_values_rounded_to_ms": true,
+  "profile": {
+    "name": "baseline_remote_get_10k_10s",
+    "host_id": "pmd-pims-aio",
+    "request_id": "get_index_empty",
+    "port": 8080,
+    "rate_rps": 10000,
+    "duration_s": 10,
+    "runs": 5,
+    "workers": 10,
+    "connections": 100,
+    "keepalive": false,
+    "server_cpu": 3,
+    "vegeta_cpus": "4,5,10,11"
+  },
+  "commit": "386151b019b7967917caa1e49c80d742bbfc6ffb",
+  "sample_n": 499992,
+  "mean_ns": 366000,
+  "stddev_ns": 669000,
+  "min_ns": 85000,
+  "p50_ns": 215000,
+  "p95_ns": 842000,
+  "p99_ns": 933000,
+  "max_ns": 29413000
+}
