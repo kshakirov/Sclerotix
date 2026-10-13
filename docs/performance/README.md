@@ -164,8 +164,8 @@ mkdir -p "$RUN_DIR"
 
 vegeta attack \
   -name="$REQUEST_ID" \
-  -targets="doc/performance/requests/$REQUEST_ID.targets" \
-  -body="doc/performance/requests/bodies/body-16b.txt" \
+  -targets="docs/performance/requests/$REQUEST_ID.targets" \
+  -body="docs/performance/requests/bodies/body-16b.txt" \
   -header="Content-Type: application/octet-stream" \
   -rate="$RATE" \
   -duration="$DURATION" \
