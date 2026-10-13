@@ -25,4 +25,4 @@ ROUTES = {
 
 
 if __name__ == "__main__":
-    run_event_loop(host="127.0.0.1", port=8080, routes=ROUTES)
+    run_event_loop(host="127.0.0.1", port=18082, routes=ROUTES)

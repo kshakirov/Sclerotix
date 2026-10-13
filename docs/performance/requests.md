@@ -6,7 +6,7 @@
 
 ```http
 GET /index.html HTTP/1.1
-Host: 127.0.0.1:8080
+Host: 127.0.0.1:18082
 Connection: close
 ```
 
@@ -18,7 +18,7 @@ Connection: close
 
 ```http
 POST /index.html HTTP/1.1
-Host: 127.0.0.1:8080
+Host: 127.0.0.1:18082
 Content-Type: application/octet-stream
 Content-Length: 16
 Connection: close
@@ -35,7 +35,7 @@ Testing handler\n
 
 ```http
 PUT /index.html HTTP/1.1
-Host: 127.0.0.1:8080
+Host: 127.0.0.1:18082
 Content-Type: application/octet-stream
 Content-Length: 1024
 Connection: close
@@ -52,7 +52,7 @@ Connection: close
 
 ```http
 PUT /index.html HTTP/1.1
-Host: 127.0.0.1:8080
+Host: 127.0.0.1:18082
 Content-Type: application/octet-stream
 Content-Length: 5120
 Connection: close

@@ -71,6 +71,10 @@ VEGETA_CPUS=4,5,10,11
 ./docs/performance/run_remote_get_baseline.sh
 ```
 
+Автоматизированная серия работает на порту `18082` и записывается как
+отдельный профиль `baseline_remote_get_10k_10s_port18082`. Исторический
+baseline от 2026-10-06 не переименовывается.
+
 Скрипт сам:
 
 - поднимает `ulimit -n` до `65535`;
@@ -201,7 +205,7 @@ vegeta encode -to=csv -output="$RUN_DIR/samples.csv" "$RUN_DIR/results.gob"
 vegeta report -type=json -output="$RUN_DIR/report.json" "$RUN_DIR/results.gob"
 ```
 
-Для GET параметр `-body` не передаётся. Для PUT выирается `body-1k.txt` или `body-5k.txt` согласно `request_id`. `BASE_URL` в канонических targets-файлах намеренно зафиксирован как `http://127.0.0.1:8080`; другой host/port должен быть отражён как отдельная конфигурация эксперимента.
+Для GET параметр `-body` не передаётся. Для PUT выирается `body-1k.txt` или `body-5k.txt` согласно `request_id`. `BASE_URL` в канонических targets-файлах намеренно зафиксирован как `http://127.0.0.1:18082`; другой host/port должен быть отражён как отдельная конфигурация эксперимента.
 
 Фактический объём выборки:
 

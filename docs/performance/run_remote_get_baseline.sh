@@ -6,14 +6,14 @@ project_dir="$(cd "$script_dir/../.." && pwd)"
 cd "$project_dir"
 
 readonly request_id="get_index_empty"
-readonly profile="baseline_remote_get_10k_10s"
+readonly profile="baseline_remote_get_10k_10s_port18082"
 readonly rate="10000/s"
 readonly duration="10s"
 readonly runs=5
 readonly warmup_duration="5s"
 readonly workers=10
 readonly connections=100
-readonly port=8080
+readonly port=18082
 readonly server_cpu=3
 readonly vegeta_cpus="4,5,10,11"
 readonly cooldown_margin=100
@@ -152,6 +152,7 @@ write_metadata() {
         printf 'VEGETA_VERSION=%s\n' "$vegeta_version"
         printf 'REQUEST_ID=%s\n' "$request_id"
         printf 'PROFILE=%s\n' "$profile"
+        printf 'PORT=%s\n' "$port"
         printf 'RATE=%s\n' "$rate"
         printf 'DURATION=%s\n' "$duration"
         printf 'WORKERS=%s\n' "$workers"
@@ -280,7 +281,7 @@ with global_summary.open("a", newline="", encoding="utf-8") as target:
                 "max_ns": row["max_ns"],
                 "throughput_rps": f"{row['throughput_rps']:.6f}",
                 "raw_csv": row["raw_csv"],
-                "notes": "automated_baseline_remote_get_10k_10s",
+                "notes": "automated_baseline_remote_get_10k_10s_port18082",
             }
         )
 
