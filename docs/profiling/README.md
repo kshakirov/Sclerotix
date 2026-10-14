@@ -21,6 +21,28 @@
 
 ## CPU baseline
 
+Канонический remote GET CPU-профиль на `pmd-pims-aio` запускается
+одной командой:
+
+```bash
+./docs/profiling/run_remote_get_cpu_profile.sh
+```
+
+Профиль повторяет performance-контур: GET `/index.html`, `10 000 RPS`,
+`10 s`, `keepalive=false`, Sclerotix на CPU `3`, Vegeta на CPU
+`4,5,10,11`. `py-spy` работает на CPU `0` и записывает `20 s` с
+частотой `100 Hz`, включая idle samples. Скрипт проверяет HTTP-результат,
+сохраняет SpeedScope JSON и печатает top self/inclusive функций.
+
+Сырые файлы живут в:
+
+```text
+~/.local/state/sclerotix-profile/cpu/<timestamp>/
+```
+
+Ниже остаётся старый POST-сценарий; он не является контролем для
+remote GET 10k и хранится только для воспроизводимости прежних замеров.
+
 Запуск из корня проекта:
 
 ```bash
