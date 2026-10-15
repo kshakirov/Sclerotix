@@ -13,9 +13,18 @@ def encode_segment(seq,i):
                 segment.append(seq[i])
                 i+=1
     return segment, i
-                
 
-def encoder(route, segment_offset):
+
+#jump 16 bytes depending on depth or leve
+#if first time is easy but check if the node exists
+#if exists do nothing save parent
+#go down until you find non existing child it will be sibling of existing one you should find the last sibling then when you create this node must add reference to itself in that last sibling so you should go the chain of siblings
+def process_segment():
+    """   """
+
+    pass
+
+def encoder(route, segment_offset,segment_buffer, node_buffer):
     length = len(route)
     depth = 0
     i =0
@@ -37,7 +46,9 @@ route = b"/api/user/info/id"
 tree = bytearray()
 
 TREE_NODE = struct.Struct('<IHIHi')
+segment_buffer = bytearray()
+node_buffer = bytearray()
 print(f"size is {TREE_NODE.size}")
-encoder(route,0)
+encoder(route,0,segment_buffer, node_buffer)
 
     
