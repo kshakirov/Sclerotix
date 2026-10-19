@@ -19,10 +19,6 @@ def read_segment(seq,i):
     return segment, i
 
 
-#jump 16 bytes depending on depth or leve
-#if first time is easy but check if the node exists
-#if exists do nothing save parent
-#go down until you find non existing child it will be sibling of existing one you should find the last sibling then when you create this node must add reference to itself in that last sibling so you should go the chain of siblings
 
 def create_node(segment, tree,tree_values, parent_offset):
     segment_offset = len(tree_values)
@@ -89,9 +85,9 @@ def encoder(route, tree,tree_values):
     while i  < length:
         match route[i]:
             case 47:
-                print("got it")
+
                 segment, i = read_segment(route,i + 1)
-                print(f"segment is {segment}, i is {i} searching in the tree")
+
                 (found, offset) = search_segment(segment,tree, tree_values, parent_offset)
                 if found:
                     parent_offset = offset
@@ -102,24 +98,8 @@ def encoder(route, tree,tree_values):
                 
             case _:
                 i+= 1
-                print("the rest")
             
                     
   
-
-route = b"/api/user/info/id"
-
-#init tree with empty root
-tree = bytearray(TREE_NODE.size)
-tree_values_array = bytearray()
-
-
-
-TREE_NODE.pack_into(tree, 0,0,0,NONE,NONE,-1)
-
-print(TREE_NODE.size)
-
-print(f"size is {TREE_NODE.size}")
-encoder(route,tree,tree_values_array)
 
     
