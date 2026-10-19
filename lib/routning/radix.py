@@ -30,14 +30,25 @@ def create_node(segment, tree,tree_values, parent_offset):
     first_child= NONE
     next_sibling = NONE
     self_offset = len(tree)
-    #handler not yet
-    so, sl, fc, ns, h_id = (TREE_NODE.unpack_from(tree, parent_offset))
-    if fc == NONE:
-        tree.extend(bytearray(18))
-        TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,-1)
-        tree_values.extend(segment)
-#        tree_values[segment_offset:] = segment
+    tree_values.extend(segment)
+    tree.extend(bytearray(18))
+    TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,-1)
+    so, sl, first_child, ns, h_id = (TREE_NODE.unpack_from(tree, parent_offset))
+    if first_child == NONE:
         TREE_NODE.pack_into(tree, parent_offset,so,sl, self_offset,ns,h_id)
+    else:
+        so,sl,fc,ns,hid = (TREE_NODE.unpack_from(tree, first_child) )
+        if ns == NONE:
+            TREE_NODE.pack_into(tree, first_child,so,sl,fc,self_offset,hid)
+        while (ns != NONE) :
+            (so,sl,fc,nns,hid) = (TREE_NODE.unpack_from(tree, ns) )
+            if nns == NONE:
+                TREE_NODE.pack_into(tree, ns,so,sl,fc,self_offset,hid)
+                break
+            ns = nns
+
+        
+        
         
 
 def search_segment(segment, tree,tree_values, offset ):
