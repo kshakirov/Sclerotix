@@ -31,7 +31,7 @@ def create_node(segment, tree,tree_values, parent_offset):
     next_sibling = NONE
     self_offset = len(tree)
     tree_values.extend(segment)
-    tree.extend(bytearray(18))
+    tree.extend(bytearray(TREE_NODE.size))
     TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,-1)
     so, sl, first_child, ns, h_id = (TREE_NODE.unpack_from(tree, parent_offset))
     if first_child == NONE:
@@ -47,7 +47,7 @@ def create_node(segment, tree,tree_values, parent_offset):
                 break
             ns = nns
 
-        
+    return self_offset    
         
         
 
@@ -95,10 +95,10 @@ def encoder(route, tree,tree_values):
                 (found, offset) = search_segment(segment,tree, tree_values, parent_offset)
                 if found:
                     parent_offset = offset
-                    i += 1
                     continue
                 else:
-                    continue
+                    parent_offset = create_node(segment,tree,tree_values, parent_offset)
+                    
                 
             case _:
                 i+= 1
@@ -110,7 +110,7 @@ def encoder(route, tree,tree_values):
 route = b"/api/user/info/id"
 
 #init tree with empty root
-tree = bytearray(18)
+tree = bytearray(TREE_NODE.size)
 tree_values_array = bytearray()
 
 
