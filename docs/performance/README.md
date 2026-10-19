@@ -90,6 +90,54 @@ baseline от 2026-10-06 не переименовывается.
 Скрипт не останавливает Storm: это внешнее изменение состояния, которое
 выполняется вручную до запуска серии.
 
+### POST baseline с фиксированным телом
+
+Для `POST /index.html` используется тот же профиль нагрузки и изоляции,
+но отдельные request и profile:
+
+```bash
+REQUEST_ID=post_index_16b
+PROFILE=baseline_remote_post_16b_10k_10s_port18082
+BODY_BYTES=16
+RATE=10000/s
+DURATION=10s
+RUNS=5
+WORKERS=10
+CONNECTIONS=100
+KEEPALIVE=false
+HTTP2=false
+SERVER_CPU=3
+VEGETA_CPUS=4,5,10,11
+```
+
+Фиксированное тело берётся из
+`docs/performance/requests/bodies/body-16b.txt`; перед запуском скрипт проверяет,
+что файл существует и содержит ровно 16 bytes. Сервер поднимается отдельно для
+warm-up и заново для каждого измеряемого прогона.
+
+Первый проверочный прогон выполняется отдельно от полной серии:
+
+```bash
+RUNS=1 ./docs/performance/run_remote_post_16b_baseline.sh
+```
+
+После проверки результата полная серия запускается без переопределения `RUNS`:
+
+```bash
+./docs/performance/run_remote_post_16b_baseline.sh
+```
+
+Каждая серия сохраняется в каталоге с UTC timestamp:
+
+```text
+var/performance/raw/YYYY-MM-DD/post_index_16b/
+baseline_remote_post_16b_10k_10s_port18082/YYYYMMDDTHHMMSSZ/
+```
+
+Внутри серии измеряемые прогоны разделены каталогами `run-NNN`; в
+`metadata.env` и `summary.csv` запрос явно записывается как
+`post_index_16b`, метод — как `POST`, размер тела — как `16`.
+
 Сравнение последней серии с историческим baseline:
 
 ```bash
