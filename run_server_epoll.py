@@ -19,6 +19,7 @@ def handle_post(request_state, arena_fragment, finished, context):
 ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
 
 def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=ROUTES):
+    resolve_handler = router.make_router(routes)[0]
     # 1. Создаем мастер-сокет
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -47,7 +48,6 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=ROUTES):
             sessions.pop(fd, None)
 
     print(f"[Sclerotix Epoll Core] Event Loop started on {host}:{port}")
-    resolve_handler = router.make_router(routes)[0]
     try:
         while True:
             # Опрашиваем ядро (timeout -1 или 1 сек)
@@ -102,7 +102,11 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=ROUTES):
                             status, arena, recognizing_data = session['feed'](data)
                             if not session.get('handler'):
                                 if recognizing_data['url']['done']:
-                                    handler = resolve_handler(router.hash_bytes(recognizing_data), recognizing_data['methods']['guess'])
+                                    url = recognizing_data['url']
+                                    handler = resolve_handler(
+                                        memoryview(url['buffer'])[:url['length']],
+                                        recognizing_data['methods']['guess']
+                                    )
                                     session['handler'] = handler
                             if status == f.ParserResult.NEED_MORE_DATA:
                                 if session.get('handler'):

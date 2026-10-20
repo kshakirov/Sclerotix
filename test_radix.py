@@ -1,4 +1,6 @@
 from lib.routning.radix import NONE, TREE_NODE, encoder, search_segment
+from lib.routning.radix import METHOD_RECORD
+from lib.handling.method_handlers import GET, POST, PATCH, decode_method_handler
 
 
 route = b"/api/user/info/id"
@@ -6,9 +8,10 @@ expected_segments = (b"api", b"user", b"info", b"id")
 
 tree = bytearray(TREE_NODE.size)
 tree_values = bytearray()
+tree_methods = bytearray()
 TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
 
-encoder(route, tree, tree_values)
+encoder(route, tree, tree_values, tree_methods, GET, 0)
 
 assert tree_values == b"apiuserinfoid"
 assert len(tree) == TREE_NODE.size * (len(expected_segments) + 1)
@@ -26,15 +29,28 @@ for segment in expected_segments:
     )
     assert tree_values[segment_offset:segment_offset + segment_length] == segment
     assert next_sibling == NONE
-    assert handler_id == -1
+    assert handler_id == (0 if segment == b"id" else -1)
     parent_offset = node_offset
 
 tree_size = len(tree)
 values_size = len(tree_values)
-encoder(route, tree, tree_values)
+encoder(route, tree, tree_values, tree_methods, GET, 0)
 
 assert len(tree) == tree_size
 assert len(tree_values) == values_size
+assert len(tree_methods) == METHOD_RECORD.size == 13
+
+# Add another method, then replace GET without allocating a new record.
+encoder(route, tree, tree_values, tree_methods, POST, 255)
+encoder(route, tree, tree_values, tree_methods, GET, 7)
+assert len(tree) == tree_size
+assert len(tree_values) == values_size
+assert len(tree_methods) == METHOD_RECORD.size
+record = METHOD_RECORD.unpack_from(tree_methods, 0)
+assert record[0] == record[1] == GET | POST
+assert decode_method_handler(GET, *record) == 7
+assert decode_method_handler(POST, *record) == 255
+assert decode_method_handler(PATCH, *record) is None
 
 
 routes = (
@@ -47,10 +63,11 @@ routes = (
 
 tree = bytearray(TREE_NODE.size)
 tree_values = bytearray()
+tree_methods = bytearray()
 TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
 
 for route in routes:
-    encoder(route, tree, tree_values)
+    encoder(route, tree, tree_values, tree_methods, GET, 0)
 
 assert tree_values == b"apiuserproductorderinfosettings"
 assert len(tree) == TREE_NODE.size * 7
@@ -87,7 +104,16 @@ assert settings_sibling == NONE
 tree_size = len(tree)
 values_size = len(tree_values)
 for route in routes:
-    encoder(route, tree, tree_values)
+    encoder(route, tree, tree_values, tree_methods, GET, 0)
 
 assert len(tree) == tree_size
 assert len(tree_values) == values_size
+assert len(tree_methods) == len(routes) * METHOD_RECORD.size
+
+# Registering descendants must preserve the parent's methods record.
+for node_offset in (user_offset, product_offset, order_offset, info_offset, settings_offset):
+    methods_offset = TREE_NODE.unpack_from(tree, node_offset)[4]
+    assert methods_offset >= 0
+    record = METHOD_RECORD.unpack_from(tree_methods, methods_offset)
+    assert decode_method_handler(GET, *record) == 0
+assert TREE_NODE.unpack_from(tree, api_offset)[4] == -1

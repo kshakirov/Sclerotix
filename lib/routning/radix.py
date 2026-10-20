@@ -1,9 +1,14 @@
 import struct
+from lib.handling.method_handlers import encode_method_handlers, method_index
 
 
 
 TREE_NODE = struct.Struct("<IHIIi")
+METHOD_RECORD = struct.Struct("<HH9s")
+METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
+NOT_FOUND = -1
+METHOD_NOT_ALLOWED = -2
 
 def read_segment(seq,i):
     segment = bytearray()
@@ -78,7 +83,40 @@ def process_segment():
 
     pass
 
-def encoder(route, tree,tree_values):
+
+def decoder(route, method, tree, tree_values, tree_methods):
+    """Return handler ID (0..255), NOT_FOUND or METHOD_NOT_ALLOWED.
+
+    Read-only traversal using the Builder's existing segment functions.
+    """
+    index = method_index(method)
+    parent_offset = 0
+    length = len(route)
+    i = 0
+    while i < length:
+        if route[i] == 47:
+            segment, i = read_segment(route, i + 1)
+            found, offset = search_segment(segment, tree, tree_values, parent_offset)
+            if not found:
+                return NOT_FOUND
+            parent_offset = offset
+        else:
+            i += 1
+
+    methods_offset = TREE_NODE.unpack_from(tree, parent_offset)[4]
+    if methods_offset == -1:
+        return NOT_FOUND
+    methods_mask, indices_mask = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
+    if methods_mask != indices_mask:
+        raise ValueError("method and occupied-position masks must match")
+    if not methods_mask & method:
+        return METHOD_NOT_ALLOWED
+    return tree_methods[methods_offset + METHOD_MASKS.size + index]
+
+def encoder(route, tree, tree_values, tree_methods, method, handler_id):
+    methods_mask, indices_mask, handlers = encode_method_handlers(
+        ((method, handler_id),)
+    )
     length = len(route)
     parent_offset = 0
     i =0
@@ -98,6 +136,23 @@ def encoder(route, tree,tree_values):
                 
             case _:
                 i+= 1
+
+    so, sl, first_child, next_sibling, methods_offset = TREE_NODE.unpack_from(
+        tree, parent_offset
+    )
+    if methods_offset == -1:
+        methods_offset = len(tree_methods)
+        tree_methods.extend(METHOD_RECORD.pack(methods_mask, indices_mask, handlers))
+        TREE_NODE.pack_into(
+            tree, parent_offset, so, sl, first_child, next_sibling, methods_offset
+        )
+    else:
+        old_methods, old_indices = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
+        METHOD_MASKS.pack_into(
+            tree_methods, methods_offset,
+            old_methods | methods_mask, old_indices | indices_mask
+        )
+        tree_methods[methods_offset + METHOD_MASKS.size + method_index(method)] = handler_id
             
                     
   
