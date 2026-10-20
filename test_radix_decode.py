@@ -1,7 +1,16 @@
 from lib.routning.radix import encoder, NONE, TREE_NODE,read_segment,search_segment
+from lib.handling.handler import make_router
 
-print("working bro")
 
+GET     = 1 << 0  # 00000001
+HEAD    = 1 << 1  # 00000010
+POST    = 1 << 2  # 00000100
+PUT     = 1 << 3  # 00001000
+DELETE  = 1 << 4  # 00010000
+CONNECT = 1 << 5  # 00100000
+OPTIONS = 1 << 6  # 01000000
+TRACE   = 1 << 7  # 10000000
+PATCH   = 1 << 8  # 100000000
 
 routes = (
     b"/api/user",
@@ -46,3 +55,4 @@ def decoder(route,tree,tree_values):
 decoder(routes[0],tree,tree_values)
 
     
+make_router(routes)
