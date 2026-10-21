@@ -53,16 +53,17 @@ def create_node(segment, tree,tree_values, parent_offset):
 def search_segment(segment, tree,tree_values, offset ):
     segment_offset, segment_length, first_child, next_sibling, handler_id = (
         TREE_NODE.unpack_from(tree, offset))
+    mv_tree_values = memoryview(tree_values)
     if first_child != NONE:
         so,sl,_,ns,_ = (TREE_NODE.unpack_from(tree, first_child) )
-        if segment == tree_values[so:(so + sl)]:
+        if segment == mv_tree_values[so:(so + sl)]:
             return (True, first_child)
         if ns == NONE:
             return (False, None)
 
         while (ns != NONE) :
             (so,sl,_,nns,_) = (TREE_NODE.unpack_from(tree, ns) )
-            if segment == tree_values[so:(so + sl)]:
+            if segment == mv_tree_values[so:(so + sl)]:
                 return (True, ns)
             ns = nns
     return (False, None)
