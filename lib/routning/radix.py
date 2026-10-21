@@ -5,6 +5,7 @@ from lib.handling.method_handlers import encode_method_handlers, method_index
 
 TREE_NODE = struct.Struct("<IHIIi")
 FIRST_CHILD = struct.Struct("<I")
+METHODS_OFFSET = struct.Struct("<i")
 METHOD_RECORD = struct.Struct("<HH9s")
 METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
@@ -105,7 +106,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
         else:
             i += 1
 
-    methods_offset = TREE_NODE.unpack_from(tree, parent_offset)[4]
+    methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + 14)[0]
     if methods_offset == -1:
         return NOT_FOUND
     methods_mask, indices_mask = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
