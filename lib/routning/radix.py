@@ -4,6 +4,7 @@ from lib.handling.method_handlers import encode_method_handlers, method_index
 
 
 TREE_NODE = struct.Struct("<IHIIi")
+FIRST_CHILD = struct.Struct("<I")
 METHOD_RECORD = struct.Struct("<HH9s")
 METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
@@ -51,8 +52,7 @@ def create_node(segment, tree,tree_values, parent_offset):
         
 
 def search_segment(segment, tree,tree_values, offset ):
-    segment_offset, segment_length, first_child, next_sibling, handler_id = (
-        TREE_NODE.unpack_from(tree, offset))
+    first_child = FIRST_CHILD.unpack_from(tree, offset + 6)[0]
     mv_tree_values = memoryview(tree_values)
     if first_child != NONE:
         so,sl,_,ns,_ = (TREE_NODE.unpack_from(tree, first_child) )
