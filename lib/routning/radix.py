@@ -91,10 +91,13 @@ def decoder(route, method, tree, tree_values, tree_methods):
     parent_offset = 0
     length = len(route)
     i = 0
+    mv_segment = memoryview(route)
     while i < length:
         if route[i] == 47:
-            segment, i = read_segment(route, i + 1)
-            found, offset = search_segment(segment, tree, tree_values, parent_offset)
+            start = i + 1
+            end = read_segment(route, start)
+            i = end
+            found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset)
             if not found:
                 return NOT_FOUND
             parent_offset = offset
