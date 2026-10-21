@@ -10,18 +10,16 @@ NONE = 0xFFFFFFFF
 NOT_FOUND = -1
 METHOD_NOT_ALLOWED = -2
 
+# here find must be implemented to make it without allocations and cycles
 def read_segment(seq,i):
-    segment = bytearray()
-
     length = len(seq)
     while i < length :
         match seq[i]:
             case 47:
-                return segment, i
+                return i
             case _:
-                segment.append(seq[i])
                 i+=1
-    return segment, i
+    return  i
 
 
 
@@ -120,18 +118,19 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id):
     length = len(route)
     parent_offset = 0
     i =0
+    mv_segment = memoryview(route)
     while i  < length:
         match route[i]:
             case 47:
-
-                segment, i = read_segment(route,i + 1)
-
-                (found, offset) = search_segment(segment,tree, tree_values, parent_offset)
+                start = i + 1
+                end = read_segment(route,i + 1)
+                i = end 
+                (found, offset) = search_segment(mv_segment[start:end],tree, tree_values, parent_offset)
                 if found:
                     parent_offset = offset
                     continue
                 else:
-                    parent_offset = create_node(segment,tree,tree_values, parent_offset)
+                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset)
                     
                 
             case _:
