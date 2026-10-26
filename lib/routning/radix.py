@@ -11,6 +11,9 @@ METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
 NOT_FOUND = -1
 METHOD_NOT_ALLOWED = -2
+SEG_LITERAL_TYPE=0
+SEG_PARAM_TYPE=1
+SEG_WILDCARD_TYPE=2
 
 
 #def parse_parameter():
@@ -22,25 +25,28 @@ def read_segment(seq,i):
         p_end = seq.find(125, i + 1)
         seg_end =seq.find(47, i + 1)
         if p_end > -1 and seg_end > -1 and seg_end - p_end ==1:
-            return seg_end, True
+            return seg_end, SEG_PARAM_TYPE
         elif seg_end == -1 and length - p_end == 1:
-            return length, True
+            return length, SEG_PARAM_TYPE
         else:
             raise "Syntax error" #TODOT the error specific 
     else:    
         while i < length :
             match seq[i]:
                 case 47:
-                    return i,False
+                    return i,SEG_LITERAL_TYPE
                 case _:
                     i+=1
-        return  i, False
+        return  i, SEG_LITERAL_TYPE
 
 
 
-def create_node(segment, tree,tree_values, parent_offset, parameter):
+def create_node(segment, tree,tree_values, parent_offset, seg_type):
     segment_offset = len(tree_values)
     segment_length = len(segment)
+    if seg_type == SEG_PARAM_TYPE:
+        segment_length = segment_length | 0x4000
+         
     first_child= NONE
     next_sibling = NONE
     self_offset = len(tree)
@@ -65,11 +71,13 @@ def create_node(segment, tree,tree_values, parent_offset, parameter):
         
         
 
-def search_segment(segment, tree,tree_values, offset ):
+def search_segment(segment, tree,tree_values, offset, seg_type ):
     first_child = FIRST_CHILD.unpack_from(tree, offset + 6)[0]
     mv_tree_values = memoryview(tree_values)
     if first_child != NONE:
         so,sl,_,ns,_ = (TREE_NODE.unpack_from(tree, first_child) )
+        if seg_type == SEG_PARAM_TYPE:
+            sl = sl & 0x3FFF
         if segment == mv_tree_values[so:(so + sl)]:
             return (True, first_child)
         if ns == NONE:
@@ -77,6 +85,8 @@ def search_segment(segment, tree,tree_values, offset ):
 
         while (ns != NONE) :
             (so,sl,_,nns,_) = (TREE_NODE.unpack_from(tree, ns) )
+            if seg_type == SEG_PARAM_TYPE:
+                sl = sl & 0x3FFF 
             if segment == mv_tree_values[so:(so + sl)]:
                 return (True, ns)
             ns = nns
@@ -141,14 +151,14 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id):
         match route[i]:
             case 47:
                 start = i + 1
-                end, parameter = read_segment(route,i + 1)
+                end, seg_type = read_segment(route,i + 1)
                 i = end 
-                (found, offset) = search_segment(mv_segment[start:end],tree, tree_values, parent_offset)
+                (found, offset) = search_segment(mv_segment[start:end],tree, tree_values, parent_offset, seg_type)
                 if found:
                     parent_offset = offset
                     continue
                 else:
-                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, parameter)
+                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type)
                     
                 
             case _:

@@ -1,4 +1,4 @@
-from lib.routning.radix import NONE, TREE_NODE, encoder, search_segment
+from lib.routning.radix import NONE, TREE_NODE, encoder, search_segment, SEG_PARAM_TYPE, SEG_LITERAL_TYPE
 from lib.routning.radix import METHOD_RECORD
 from lib.handling.method_handlers import GET, POST, PATCH, decode_method_handler
 
@@ -19,7 +19,7 @@ assert len(tree) == TREE_NODE.size * (len(expected_segments) + 1)
 parent_offset = 0
 for segment in expected_segments:
     found, node_offset = search_segment(
-        segment, tree, tree_values, parent_offset
+        segment, tree, tree_values, parent_offset,SEG_LITERAL_TYPE
     )
     assert found
     assert node_offset == parent_offset + TREE_NODE.size
@@ -72,14 +72,14 @@ for route in routes:
 assert tree_values == b"apiuserproductorderinfosettings"
 assert len(tree) == TREE_NODE.size * 7
 
-found, api_offset = search_segment(b"api", tree, tree_values, 0)
+found, api_offset = search_segment(b"api", tree, tree_values, 0,SEG_LITERAL_TYPE)
 assert found
 
-found, user_offset = search_segment(b"user", tree, tree_values, api_offset)
+found, user_offset = search_segment(b"user", tree, tree_values, api_offset,SEG_LITERAL_TYPE)
 assert found
-found, product_offset = search_segment(b"product", tree, tree_values, api_offset)
+found, product_offset = search_segment(b"product", tree, tree_values, api_offset,SEG_LITERAL_TYPE)
 assert found
-found, order_offset = search_segment(b"order", tree, tree_values, api_offset)
+found, order_offset = search_segment(b"order", tree, tree_values, api_offset,SEG_LITERAL_TYPE)
 assert found
 
 _, _, _, user_sibling, _ = TREE_NODE.unpack_from(tree, user_offset)
@@ -89,10 +89,10 @@ assert user_sibling == product_offset
 assert product_sibling == order_offset
 assert order_sibling == NONE
 
-found, info_offset = search_segment(b"info", tree, tree_values, user_offset)
+found, info_offset = search_segment(b"info", tree, tree_values, user_offset,SEG_LITERAL_TYPE)
 assert found
 found, settings_offset = search_segment(
-    b"settings", tree, tree_values, user_offset
+    b"settings", tree, tree_values, user_offset,SEG_LITERAL_TYPE
 )
 assert found
 
