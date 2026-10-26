@@ -12,20 +12,33 @@ NONE = 0xFFFFFFFF
 NOT_FOUND = -1
 METHOD_NOT_ALLOWED = -2
 
+
+#def parse_parameter():
+
 # here find must be implemented to make it without allocations and cycles
 def read_segment(seq,i):
     length = len(seq)
-    while i < length :
-        match seq[i]:
-            case 47:
-                return i
-            case _:
-                i+=1
-    return  i
+    if seq[i] == 123:
+        p_end = seq.find(125, i + 1)
+        seg_end =seq.find(47, i + 1)
+        if p_end > -1 and seg_end > -1 and seg_end - p_end ==1:
+            return seg_end, True
+        elif seg_end == -1 and length - p_end == 1:
+            return length, True
+        else:
+            raise "Syntax error" #TODOT the error specific 
+    else:    
+        while i < length :
+            match seq[i]:
+                case 47:
+                    return i,False
+                case _:
+                    i+=1
+        return  i, False
 
 
 
-def create_node(segment, tree,tree_values, parent_offset):
+def create_node(segment, tree,tree_values, parent_offset, parameter):
     segment_offset = len(tree_values)
     segment_length = len(segment)
     first_child= NONE
@@ -128,14 +141,14 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id):
         match route[i]:
             case 47:
                 start = i + 1
-                end = read_segment(route,i + 1)
+                end, parameter = read_segment(route,i + 1)
                 i = end 
                 (found, offset) = search_segment(mv_segment[start:end],tree, tree_values, parent_offset)
                 if found:
                     parent_offset = offset
                     continue
                 else:
-                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset)
+                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, parameter)
                     
                 
             case _:
