@@ -41,11 +41,12 @@ def read_segment(seq,i):
 
 
 
-def create_node(segment, tree,tree_values, parent_offset, seg_type):
+def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs):
     segment_offset = len(tree_values)
     segment_length = len(segment)
     if seg_type == SEG_PARAM_TYPE:
         segment_length = segment_length | 0x4000
+
          
     first_child= NONE
     next_sibling = NONE
@@ -66,7 +67,9 @@ def create_node(segment, tree,tree_values, parent_offset, seg_type):
                 TREE_NODE.pack_into(tree, ns,so,sl,fc,self_offset,hid)
                 break
             ns = nns
-
+    if seg_type == SEG_PARAM_TYPE:
+        param_pairs.append((self_offset, parent_offset))
+            
     return self_offset    
         
         
@@ -139,7 +142,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
         return METHOD_NOT_ALLOWED
     return tree_methods[methods_offset + METHOD_MASKS.size + index]
 
-def encoder(route, tree, tree_values, tree_methods, method, handler_id):
+def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pairs):
     methods_mask, indices_mask, handlers = encode_method_handlers(
         ((method, handler_id),)
     )
@@ -158,7 +161,7 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id):
                     parent_offset = offset
                     continue
                 else:
-                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type)
+                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type, param_pairs)
                     
                 
             case _:
