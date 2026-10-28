@@ -99,6 +99,47 @@ def search_segment(segment, tree,tree_values, offset, seg_type ):
         
         
 
+
+def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset):
+ 
+    segment_offset = len(tree)
+    tree.extend(bytearray(TREE_NODE.size))
+    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1)
+    return segment_offset
+
+
+
+def finalize(tree, tree_values, param_pairs):
+    for (param_node_offset,parent_node_offset) in param_pairs:
+        siblings = []
+        _, _, first_child, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
+        _, _, param_node_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
+        c_seg, c_seg_len, c_first_child_offset = False,False,False
+        if param_node_first_child_offset < 0xFFFFFFFF:
+            c_seg, c_seg_len, c_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
+        sibling = first_child
+        tree_length = len(tree)
+        while  sibling:
+            _, _,has_child, next_sibling, methods_offset = TREE_NODE.unpack_from(tree, sibling)
+            print(f"current sibling {sibling}, next sibling {next_sibling}")
+            if sibling != param_node_offset:
+                siblings.append(sibling)
+            if next_sibling and next_sibling < tree_length: 
+                sibling = next_sibling
+            else:
+                sibling = None
+                
+        print(siblings)
+        #next create a half copy  of one of siblings
+        for s in siblings:
+            print("prepareing to create a real child a copy of the parametrized one")
+            #somewhere to bind parent to parameter?
+            if c_seg:
+                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset)
+                old_first_child = FIRST_CHILD.unpack_from(tree, s + 6)
+                FIRST_CHILD.pack_into(tree, s + 6, clone_node_offset)
+                NEXT_SIBLING.pack_into(tree, clone_node_offset + 10, old_first_child[0])
+
         
          
 
@@ -124,9 +165,9 @@ def decoder(route, method, tree, tree_values, tree_methods):
     while i < length:
         if route[i] == 47:
             start = i + 1
-            end = read_segment(route, start)
+            end, seg_type = read_segment(route, start)
             i = end
-            found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset)
+            found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset, seg_type)
             if not found:
                 return NOT_FOUND
             parent_offset = offset
@@ -189,3 +230,42 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pa
   
 
     
+def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset):
+ 
+    segment_offset = len(tree)
+    tree.extend(bytearray(TREE_NODE.size))
+    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1)
+    return segment_offset
+
+
+
+def finalize(tree, tree_values, param_pairs):
+    for (param_node_offset,parent_node_offset) in param_pairs:
+        siblings = []
+        _, _, first_child, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
+        _, _, param_node_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
+        c_seg, c_seg_len, c_first_child_offset = False,False,False
+        if param_node_first_child_offset < 0xFFFFFFFF:
+            c_seg, c_seg_len, c_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
+        sibling = first_child
+        tree_length = len(tree)
+        while  sibling:
+            _, _,has_child, next_sibling, methods_offset = TREE_NODE.unpack_from(tree, sibling)
+            print(f"current sibling {sibling}, next sibling {next_sibling}")
+            if sibling != param_node_offset:
+                siblings.append(sibling)
+            if next_sibling and next_sibling < tree_length: 
+                sibling = next_sibling
+            else:
+                sibling = None
+                
+        print(siblings)
+        #next create a half copy  of one of siblings
+        for s in siblings:
+            print("prepareing to create a real child a copy of the parametrized one")
+            #somewhere to bind parent to parameter?
+            if c_seg:
+                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset)
+                old_first_child = FIRST_CHILD.unpack_from(tree, s + 6)
+                FIRST_CHILD.pack_into(tree, s + 6, clone_node_offset)
+                NEXT_SIBLING.pack_into(tree, clone_node_offset + 10, old_first_child[0])
