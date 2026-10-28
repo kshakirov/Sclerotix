@@ -48,7 +48,7 @@ def finalize(tree, tree_values, param_pairs):
         while  sibling:
             _, _,has_child, next_sibling, methods_offset = TREE_NODE.unpack_from(tree, sibling)
             print(f"current sibling {sibling}, next sibling {next_sibling}")
-            if sibling != param_node_offset and methods_offset >=0:
+            if sibling != param_node_offset:
                 siblings.append(sibling)
             if next_sibling and next_sibling < tree_length: 
                 sibling = next_sibling
