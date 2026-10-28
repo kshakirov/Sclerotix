@@ -5,6 +5,7 @@ from lib.handling.method_handlers import encode_method_handlers, method_index
 
 TREE_NODE = struct.Struct("<IHIIi")
 FIRST_CHILD = struct.Struct("<I")
+NEXT_SIBLING = struct.Struct("<I")
 METHODS_OFFSET = struct.Struct("<i")
 METHOD_RECORD = struct.Struct("<HH9s")
 METHOD_MASKS = struct.Struct("<HH")
