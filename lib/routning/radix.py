@@ -73,27 +73,44 @@ def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs)
             
     return self_offset    
         
-        
 
-def search_segment(segment, tree,tree_values, offset, seg_type ):
+def is_parameter_type(length):
+    return length & 0x4000 == 0x4000
+
+
+def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
     first_child = FIRST_CHILD.unpack_from(tree, offset + 6)[0]
+    param_node = None
     mv_tree_values = memoryview(tree_values)
     if first_child != NONE:
         so,sl,_,ns,_ = (TREE_NODE.unpack_from(tree, first_child) )
+
         if seg_type == SEG_PARAM_TYPE:
             sl = sl & 0x3FFF
+
         if segment == mv_tree_values[so:(so + sl)]:
             return (True, first_child)
+
+        if decoder and is_parameter_type(sl):
+            param_node =  (first_child, (so,sl))
+
         if ns == NONE:
+            if decoder and param_node:
+                return (True, param_node)
             return (False, None)
 
         while (ns != NONE) :
             (so,sl,_,nns,_) = (TREE_NODE.unpack_from(tree, ns) )
+            if is_parameter_type(sl):
+                param_node= (ns,(so,sl))
             if seg_type == SEG_PARAM_TYPE:
                 sl = sl & 0x3FFF 
             if segment == mv_tree_values[so:(so + sl)]:
                 return (True, ns)
+        
             ns = nns
+        if decoder and param_node:
+            return (True, param_node)
     return (False, None)
         
         
@@ -161,13 +178,17 @@ def decoder(route, method, tree, tree_values, tree_methods):
     parent_offset = 0
     length = len(route)
     i = 0
+    param_data = []
     mv_segment = memoryview(route)
     while i < length:
         if route[i] == 47:
             start = i + 1
             end, seg_type = read_segment(route, start)
             i = end
-            found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset, seg_type)
+            found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset, seg_type, True)
+            if isinstance(offset, tuple):
+                offset, (param_offset, param_length) = offset
+                param_data.append((mv_segment, param_offset, param_length))
             if not found:
                 return NOT_FOUND
             parent_offset = offset
