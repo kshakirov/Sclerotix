@@ -170,7 +170,9 @@ def process_segment():
 
 
 def decoder(route, method, tree, tree_values, tree_methods):
-    """Return handler ID (0..255), NOT_FOUND or METHOD_NOT_ALLOWED.
+    """Return (handler ID, parameter pairs), or (error code, None).
+
+    Each parameter pair contains memoryviews of its name and URL value.
 
     Read-only traversal using the Builder's existing segment functions.
     """
@@ -188,22 +190,24 @@ def decoder(route, method, tree, tree_values, tree_methods):
             found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset, seg_type, True)
             if isinstance(offset, tuple):
                 offset, (param_offset, param_length) = offset
-                param_data.append((mv_segment, param_offset, param_length))
+                param_length &= 0x3FFF
+                name = memoryview(tree_values)[param_offset + 1:param_offset + param_length - 1]
+                param_data.append((name, mv_segment[start:end]))
             if not found:
-                return NOT_FOUND
+                return NOT_FOUND, None
             parent_offset = offset
         else:
             i += 1
 
     methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + 14)[0]
     if methods_offset == -1:
-        return NOT_FOUND
+        return NOT_FOUND,None
     methods_mask, indices_mask = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
     if methods_mask != indices_mask:
         raise ValueError("method and occupied-position masks must match")
     if not methods_mask & method:
-        return METHOD_NOT_ALLOWED
-    return tree_methods[methods_offset + METHOD_MASKS.size + index]
+        return METHOD_NOT_ALLOWED,None
+    return tree_methods[methods_offset + METHOD_MASKS.size + index], param_data
 
 def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pairs):
     methods_mask, indices_mask, handlers = encode_method_handlers(

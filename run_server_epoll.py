@@ -103,11 +103,12 @@ def run_event_loop(host: str = "127.0.0.1", port: int = 8080, routes=ROUTES):
                             if not session.get('handler'):
                                 if recognizing_data['url']['done']:
                                     url = recognizing_data['url']
-                                    handler = resolve_handler(
+                                    handler, params = resolve_handler(
                                         memoryview(url['buffer'])[:url['length']],
                                         recognizing_data['methods']['guess']
                                     )
                                     session['handler'] = handler
+                                    session['ctx']['params'] = params
                             if status == f.ParserResult.NEED_MORE_DATA:
                                 if session.get('handler'):
                                     session['handler'](recognizing_data, arena, False, session['ctx'])

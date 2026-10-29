@@ -16,6 +16,7 @@ def make_router(routes):
     tree_values = bytearray()
     tree_methods = bytearray()
     handlers = []
+    param_pairs = []
     TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
     method_bits = {
         Methods.GET: mh.GET, Methods.HEAD: mh.HEAD, Methods.POST: mh.POST,
@@ -43,12 +44,12 @@ def make_router(routes):
 
     def resolve_handler(url, method):
         method = method_bits.get(method, method)
-        handler_id = decoder(url, method, tree, tree_values, tree_methods)
+        handler_id, params = decoder(url, method, tree, tree_values, tree_methods)
         if handler_id == NOT_FOUND:
-            return no_route
+            return no_route, None
         if handler_id == METHOD_NOT_ALLOWED:
-            return method_not_allowed
-        return handlers[handler_id]
+            return method_not_allowed, None
+        return handlers[handler_id], params
 
     def add_route(method, url, handler):
         method = method_bits.get(method, method)
@@ -60,7 +61,7 @@ def make_router(routes):
             handler_id = len(handlers)
             if handler_id >= 256:
                 raise ValueError("the handler registry supports at most 256 functions")
-        encoder(url, tree, tree_values, tree_methods, method, handler_id)
+        encoder(url, tree, tree_values, tree_methods, method, handler_id, param_pairs)
         if handler_id == len(handlers):
             handlers.append(handler)
 
