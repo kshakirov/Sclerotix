@@ -24,7 +24,7 @@ tree = bytearray(TREE_NODE.size)
 tree_values = bytearray()
 param_pairs = []
 tree_methods = bytearray()
-TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
+TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
 
 
 for route, method, handler_id in route_cases:

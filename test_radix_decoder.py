@@ -3,7 +3,7 @@ from lib.routning.radix import NONE, TREE_NODE, encoder, finalize, decoder
 
 tree = bytearray(TREE_NODE.size)
 tree_values, tree_methods, param_pairs = bytearray(), bytearray(), []
-TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
+TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
 
 for route, handler_id in (
     (b"/users/me", 10),

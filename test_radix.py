@@ -12,7 +12,7 @@ tree = bytearray(TREE_NODE.size)
 tree_values = bytearray()
 tree_methods = bytearray()
 param_pairs = []
-TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
+TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
 
 for route, method, handler_id in route_cases:
     encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pairs)

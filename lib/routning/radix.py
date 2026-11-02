@@ -3,7 +3,13 @@ from lib.handling.method_handlers import encode_method_handlers, method_index
 
 
 
-TREE_NODE = struct.Struct("<IHIIi")
+# Eight 32-bit fields, little-endian; all links are byte offsets.
+TREE_NODE = struct.Struct("<IIIIiIII")
+FIRST_CHILD_OFFSET = 8
+NEXT_SIBLING_OFFSET = 12
+METHODS_OFFSET_OFFSET = 16
+PARAM_REF_OFFSET = 20
+SEGMENT_TYPE_OFFSET = 24
 FIRST_CHILD = struct.Struct("<I")
 NEXT_SIBLING = struct.Struct("<I")
 METHODS_OFFSET = struct.Struct("<i")
@@ -45,8 +51,6 @@ def read_segment(seq,i):
 def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs):
     segment_offset = len(tree_values)
     segment_length = len(segment)
-    if seg_type == SEG_PARAM_TYPE:
-        segment_length = segment_length | 0x4000
 
          
     first_child= NONE
@@ -54,18 +58,18 @@ def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs)
     self_offset = len(tree)
     tree_values.extend(segment)
     tree.extend(bytearray(TREE_NODE.size))
-    TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,-1)
-    so, sl, first_child, ns, h_id = (TREE_NODE.unpack_from(tree, parent_offset))
+    TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,-1,NONE,seg_type,0)
+    so, sl, first_child, ns, h_id, param_ref, node_type, reserved = (TREE_NODE.unpack_from(tree, parent_offset))
     if first_child == NONE:
-        TREE_NODE.pack_into(tree, parent_offset,so,sl, self_offset,ns,h_id)
+        TREE_NODE.pack_into(tree, parent_offset,so,sl, self_offset,ns,h_id,param_ref,node_type,reserved)
     else:
-        so,sl,fc,ns,hid = (TREE_NODE.unpack_from(tree, first_child) )
+        so,sl,fc,ns,hid,param_ref,node_type,reserved = (TREE_NODE.unpack_from(tree, first_child) )
         if ns == NONE:
-            TREE_NODE.pack_into(tree, first_child,so,sl,fc,self_offset,hid)
+            TREE_NODE.pack_into(tree, first_child,so,sl,fc,self_offset,hid,param_ref,node_type,reserved)
         while (ns != NONE) :
-            (so,sl,fc,nns,hid) = (TREE_NODE.unpack_from(tree, ns) )
+            (so,sl,fc,nns,hid,param_ref,node_type,reserved) = (TREE_NODE.unpack_from(tree, ns) )
             if nns == NONE:
-                TREE_NODE.pack_into(tree, ns,so,sl,fc,self_offset,hid)
+                TREE_NODE.pack_into(tree, ns,so,sl,fc,self_offset,hid,param_ref,node_type,reserved)
                 break
             ns = nns
     if seg_type == SEG_PARAM_TYPE:
@@ -74,24 +78,22 @@ def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs)
     return self_offset    
         
 
-def is_parameter_type(length):
-    return length & 0x4000 == 0x4000
+def is_parameter_type(seg_type):
+    return seg_type == SEG_PARAM_TYPE
 
 
 def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
-    first_child = FIRST_CHILD.unpack_from(tree, offset + 6)[0]
+    first_child = FIRST_CHILD.unpack_from(tree, offset + FIRST_CHILD_OFFSET)[0]
     param_node = None
     mv_tree_values = memoryview(tree_values)
     if first_child != NONE:
-        so,sl,_,ns,_ = (TREE_NODE.unpack_from(tree, first_child) )
+        so,sl,_,ns,_,_,node_type,_ = (TREE_NODE.unpack_from(tree, first_child) )
 
-        if seg_type == SEG_PARAM_TYPE:
-            sl = sl & 0x3FFF
 
         if segment == mv_tree_values[so:(so + sl)]:
             return (True, first_child)
 
-        if decoder and is_parameter_type(sl):
+        if decoder and is_parameter_type(node_type):
             param_node =  (first_child, (so,sl))
 
         if ns == NONE:
@@ -100,11 +102,9 @@ def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
             return (False, None)
 
         while (ns != NONE) :
-            (so,sl,_,nns,_) = (TREE_NODE.unpack_from(tree, ns) )
-            if is_parameter_type(sl):
+            (so,sl,_,nns,_,_,node_type,_) = (TREE_NODE.unpack_from(tree, ns) )
+            if is_parameter_type(node_type):
                 param_node= (ns,(so,sl))
-            if seg_type == SEG_PARAM_TYPE:
-                sl = sl & 0x3FFF 
             if segment == mv_tree_values[so:(so + sl)]:
                 return (True, ns)
         
@@ -117,27 +117,28 @@ def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
         
 
 
-def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset):
+def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset, c_seg_type=SEG_LITERAL_TYPE):
  
     segment_offset = len(tree)
     tree.extend(bytearray(TREE_NODE.size))
-    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1)
+    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1,NONE,c_seg_type,0)
     return segment_offset
 
 
 
 def finalize(tree, tree_values, param_pairs):
     for (param_node_offset,parent_node_offset) in param_pairs:
+        print(param_pairs)
         siblings = []
-        _, _, first_child, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
-        _, _, param_node_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
+        _, _, first_child, _, _, _, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
+        _, _, param_node_first_child_offset, _, _, _, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
         c_seg, c_seg_len, c_first_child_offset = False,False,False
         if param_node_first_child_offset < 0xFFFFFFFF:
-            c_seg, c_seg_len, c_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
+            c_seg, c_seg_len, c_first_child_offset, _, _, _, c_seg_type, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
         sibling = first_child
         tree_length = len(tree)
         while  sibling:
-            _, _,has_child, next_sibling, methods_offset = TREE_NODE.unpack_from(tree, sibling)
+            _, _,has_child, next_sibling, methods_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
             print(f"current sibling {sibling}, next sibling {next_sibling}")
             if sibling != param_node_offset:
                 siblings.append(sibling)
@@ -146,16 +147,15 @@ def finalize(tree, tree_values, param_pairs):
             else:
                 sibling = None
                 
-        print(siblings)
         #next create a half copy  of one of siblings
         for s in siblings:
             print("prepareing to create a real child a copy of the parametrized one")
             #somewhere to bind parent to parameter?
             if c_seg:
-                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset)
-                old_first_child = FIRST_CHILD.unpack_from(tree, s + 6)
-                FIRST_CHILD.pack_into(tree, s + 6, clone_node_offset)
-                NEXT_SIBLING.pack_into(tree, clone_node_offset + 10, old_first_child[0])
+                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset,c_seg_type)
+                old_first_child = FIRST_CHILD.unpack_from(tree, s + FIRST_CHILD_OFFSET)
+                FIRST_CHILD.pack_into(tree, s + FIRST_CHILD_OFFSET, clone_node_offset)
+                NEXT_SIBLING.pack_into(tree, clone_node_offset + NEXT_SIBLING_OFFSET, old_first_child[0])
 
         
          
@@ -190,7 +190,6 @@ def decoder(route, method, tree, tree_values, tree_methods):
             found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset, seg_type, True)
             if isinstance(offset, tuple):
                 offset, (param_offset, param_length) = offset
-                param_length &= 0x3FFF
                 name = memoryview(tree_values)[param_offset + 1:param_offset + param_length - 1]
                 param_data.append((name, mv_segment[start:end]))
             if not found:
@@ -199,7 +198,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
         else:
             i += 1
 
-    methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + 14)[0]
+    methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + METHODS_OFFSET_OFFSET)[0]
     if methods_offset == -1:
         return NOT_FOUND,None
     methods_mask, indices_mask = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
@@ -234,14 +233,15 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pa
             case _:
                 i+= 1
 
-    so, sl, first_child, next_sibling, methods_offset = TREE_NODE.unpack_from(
+    so, sl, first_child, next_sibling, methods_offset, param_ref, node_type, reserved = TREE_NODE.unpack_from(
         tree, parent_offset
     )
     if methods_offset == -1:
         methods_offset = len(tree_methods)
         tree_methods.extend(METHOD_RECORD.pack(methods_mask, indices_mask, handlers))
         TREE_NODE.pack_into(
-            tree, parent_offset, so, sl, first_child, next_sibling, methods_offset
+            tree, parent_offset, so, sl, first_child, next_sibling, methods_offset,
+            param_ref, node_type, reserved
         )
     else:
         old_methods, old_indices = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
@@ -255,27 +255,27 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pa
   
 
     
-def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset):
+def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset, c_seg_type=SEG_LITERAL_TYPE):
  
     segment_offset = len(tree)
     tree.extend(bytearray(TREE_NODE.size))
-    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1)
+    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1,NONE,c_seg_type,0)
     return segment_offset
 
 
-
+#parent node offset is users param node offset is {id}, new me is its brother
 def finalize(tree, tree_values, param_pairs):
     for (param_node_offset,parent_node_offset) in param_pairs:
         siblings = []
-        _, _, first_child, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
-        _, _, param_node_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
+        _, _, first_child, _, _, _, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
+        _, _, param_node_first_child_offset, _, _, _, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
         c_seg, c_seg_len, c_first_child_offset = False,False,False
         if param_node_first_child_offset < 0xFFFFFFFF:
-            c_seg, c_seg_len, c_first_child_offset, _, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
+            c_seg, c_seg_len, c_first_child_offset, _, _, _, c_seg_type, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
         sibling = first_child
         tree_length = len(tree)
         while  sibling:
-            _, _,has_child, next_sibling, methods_offset = TREE_NODE.unpack_from(tree, sibling)
+            _, _,has_child, next_sibling, methods_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
             print(f"current sibling {sibling}, next sibling {next_sibling}")
             if sibling != param_node_offset:
                 siblings.append(sibling)
@@ -284,13 +284,14 @@ def finalize(tree, tree_values, param_pairs):
             else:
                 sibling = None
                 
-        print(siblings)
+        #print(siblings)
         #next create a half copy  of one of siblings
         for s in siblings:
             print("prepareing to create a real child a copy of the parametrized one")
+            print(tree_values)
             #somewhere to bind parent to parameter?
             if c_seg:
-                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset)
-                old_first_child = FIRST_CHILD.unpack_from(tree, s + 6)
-                FIRST_CHILD.pack_into(tree, s + 6, clone_node_offset)
-                NEXT_SIBLING.pack_into(tree, clone_node_offset + 10, old_first_child[0])
+                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset,c_seg_type)
+                old_first_child = FIRST_CHILD.unpack_from(tree, s + FIRST_CHILD_OFFSET)
+                FIRST_CHILD.pack_into(tree, s + FIRST_CHILD_OFFSET, clone_node_offset)
+                NEXT_SIBLING.pack_into(tree, clone_node_offset + NEXT_SIBLING_OFFSET, old_first_child[0])

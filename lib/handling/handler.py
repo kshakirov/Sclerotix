@@ -17,7 +17,7 @@ def make_router(routes):
     tree_methods = bytearray()
     handlers = []
     param_pairs = []
-    TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1)
+    TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
     method_bits = {
         Methods.GET: mh.GET, Methods.HEAD: mh.HEAD, Methods.POST: mh.POST,
         Methods.PUT: mh.PUT, Methods.DELETE: mh.DELETE, Methods.PATCH: mh.PATCH,
