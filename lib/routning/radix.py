@@ -21,6 +21,7 @@ METHOD_NOT_ALLOWED = -2
 SEG_LITERAL_TYPE=0
 SEG_PARAM_TYPE=1
 SEG_WILDCARD_TYPE=2
+SEG_CLONE_TYPE=3
 
 
 #def parse_parameter():
@@ -255,11 +256,11 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pa
   
 
     
-def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset, c_seg_type=SEG_LITERAL_TYPE):
+def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset, param_ref):
  
     segment_offset = len(tree)
     tree.extend(bytearray(TREE_NODE.size))
-    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1,NONE,c_seg_type,0)
+    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1,param_ref,SEG_CLONE_TYPE,0)
     return segment_offset
 
 
@@ -287,11 +288,10 @@ def finalize(tree, tree_values, param_pairs):
         #print(siblings)
         #next create a half copy  of one of siblings
         for s in siblings:
-            print("prepareing to create a real child a copy of the parametrized one")
-            print(tree_values)
+            print("prepareing to create a real child a copy of the parametrized one dfdfdf")
             #somewhere to bind parent to parameter?
             if c_seg:
-                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset,c_seg_type)
+                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset,param_node_offset)
                 old_first_child = FIRST_CHILD.unpack_from(tree, s + FIRST_CHILD_OFFSET)
                 FIRST_CHILD.pack_into(tree, s + FIRST_CHILD_OFFSET, clone_node_offset)
                 NEXT_SIBLING.pack_into(tree, clone_node_offset + NEXT_SIBLING_OFFSET, old_first_child[0])
