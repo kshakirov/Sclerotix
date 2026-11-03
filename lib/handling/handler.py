@@ -1,7 +1,7 @@
 from lib.handling import method_handlers as mh
 from lib.parsing.http_headers_parser import Methods
 from lib.routning.radix import (
-    NONE, TREE_NODE, NOT_FOUND, METHOD_NOT_ALLOWED, encoder, decoder,
+    NONE, TREE_NODE, NOT_FOUND, METHOD_NOT_ALLOWED, encoder, decoder, finalize,
 )
 
 
@@ -17,6 +17,8 @@ def make_router(routes):
     tree_methods = bytearray()
     handlers = []
     param_pairs = []
+    registrations = {}
+    dirty = False
     TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
     method_bits = {
         Methods.GET: mh.GET, Methods.HEAD: mh.HEAD, Methods.POST: mh.POST,
@@ -43,6 +45,15 @@ def make_router(routes):
         return response_method_not_allowed
 
     def resolve_handler(url, method):
+        nonlocal tree, tree_values, tree_methods, param_pairs, dirty
+        if dirty:
+            tree = bytearray(TREE_NODE.size)
+            tree_values, tree_methods, param_pairs = bytearray(), bytearray(), []
+            TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
+            for (registered_method, path), handler_id in registrations.items():
+                encoder(path, tree, tree_values, tree_methods, registered_method, handler_id, param_pairs)
+            finalize(tree, tree_values, param_pairs)
+            dirty = False
         method = method_bits.get(method, method)
         handler_id, params = decoder(url, method, tree, tree_values, tree_methods)
         if handler_id == NOT_FOUND:
@@ -52,6 +63,7 @@ def make_router(routes):
         return handlers[handler_id], params
 
     def add_route(method, url, handler):
+        nonlocal dirty
         method = method_bits.get(method, method)
         mh.method_index(method)
         for handler_id, registered in enumerate(handlers):
@@ -61,7 +73,8 @@ def make_router(routes):
             handler_id = len(handlers)
             if handler_id >= 256:
                 raise ValueError("the handler registry supports at most 256 functions")
-        encoder(url, tree, tree_values, tree_methods, method, handler_id, param_pairs)
+        registrations[(method, url)] = handler_id
+        dirty = True
         if handler_id == len(handlers):
             handlers.append(handler)
 

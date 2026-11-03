@@ -15,6 +15,7 @@ for route, handler_id in (
 finalize(tree, tree_values, param_pairs)
 
 assert decoder(b"/users/me", GET, tree, tree_values, tree_methods)[0] == 10
+assert decoder(b"/users/me/text/read", GET, tree, tree_values, tree_methods)[0] == 20
 handler_id, params = decoder(b"/users/3/posts/good", GET, tree, tree_values, tree_methods)
 assert handler_id == 30 and params == [(b"id", b"3")]
 handler_id, params = decoder(b"/users/me/posts/good", GET, tree, tree_values, tree_methods)

@@ -104,10 +104,7 @@ def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
 
         if decoder and is_clone_type(node_type):
             po,pl,_,pns,_,_,node_type,_ = (TREE_NODE.unpack_from(tree, offset) )
-          
             param_ref_o,param_ref_len,_,_,_,_,_,_ = (TREE_NODE.unpack_from(tree, param_ref) )
-           
-            print(f"inside if clone is {tree_values[so:(so + sl)]} the param value {tree_values[po:(po + pl)]} param name is {tree_values[param_ref_o:(param_ref_o + param_ref_len)]}")
             param_node = (first_child, (param_ref_o,param_ref_len),mv_tree_values[po:(po + pl)])
             
 
@@ -257,7 +254,7 @@ def finalize(tree, tree_values, param_pairs):
         tree_length = len(tree)
         while  sibling:
             _, _,has_child, next_sibling, methods_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
-            print(f"current sibling {sibling}, next sibling {next_sibling}")
+           
             if sibling != param_node_offset:
                 siblings.append(sibling)
             if next_sibling and next_sibling < tree_length: 
@@ -268,7 +265,7 @@ def finalize(tree, tree_values, param_pairs):
         #print(siblings)
         #next create a half copy  of one of siblings
         for s in siblings:
-            print("prepareing to create a real child a copy of the parametrized one dfdfdf")
+
             #somewhere to bind parent to parameter?
             if c_seg:
                 clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset,param_node_offset)

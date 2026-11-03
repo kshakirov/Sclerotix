@@ -46,3 +46,10 @@ assert resolve_handler(b"/index.html", Methods.GET)[0] is handle_post
 resolve_params, _ = make_router({(Methods.GET, b"/users/{id}/posts"): handle_get})
 handler, params = resolve_params(b"/users/3/posts", Methods.GET)
 assert handler is handle_get and params == [(b"id", b"3")]
+
+# Rebuild finalized buffers after a later registration.
+resolve_updated, add_updated = make_router({(Methods.GET, b"/users/me"): handle_get})
+assert resolve_updated(b"/users/me", Methods.GET)[0] is handle_get
+add_updated(Methods.GET, b"/users/{id}/posts/good", handle_post)
+handler, params = resolve_updated(b"/users/me/posts/good", Methods.GET)
+assert handler is handle_post and params == [(b"id", b"me")]
