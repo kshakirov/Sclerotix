@@ -82,20 +82,34 @@ def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs)
 def is_parameter_type(seg_type):
     return seg_type == SEG_PARAM_TYPE
 
+def is_clone_type(seg_type):
+    return seg_type == SEG_CLONE_TYPE
+
+
 
 def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
     first_child = FIRST_CHILD.unpack_from(tree, offset + FIRST_CHILD_OFFSET)[0]
     param_node = None
     mv_tree_values = memoryview(tree_values)
     if first_child != NONE:
-        so,sl,_,ns,_,_,node_type,_ = (TREE_NODE.unpack_from(tree, first_child) )
+        so,sl,_,ns,_,param_ref,node_type,_ = (TREE_NODE.unpack_from(tree, first_child) )
+        
 
 
-        if segment == mv_tree_values[so:(so + sl)]:
+        if segment == mv_tree_values[so:(so + sl)] and not is_clone_type(node_type):
             return (True, first_child)
 
         if decoder and is_parameter_type(node_type):
             param_node =  (first_child, (so,sl))
+
+        if decoder and is_clone_type(node_type):
+            po,pl,_,pns,_,_,node_type,_ = (TREE_NODE.unpack_from(tree, offset) )
+          
+            param_ref_o,param_ref_len,_,_,_,_,_,_ = (TREE_NODE.unpack_from(tree, param_ref) )
+           
+            print(f"inside if clone is {tree_values[so:(so + sl)]} the param value {tree_values[po:(po + pl)]} param name is {tree_values[param_ref_o:(param_ref_o + param_ref_len)]}")
+            param_node = (first_child, (param_ref_o,param_ref_len),mv_tree_values[po:(po + pl)])
+            
 
         if ns == NONE:
             if decoder and param_node:
@@ -117,46 +131,6 @@ def search_segment(segment, tree,tree_values, offset, seg_type, decoder=False ):
         
         
 
-
-def create_clone_node(tree,tree_values, parent_offset, c_seg, c_seg_len,c_first_child_offset, c_seg_type=SEG_LITERAL_TYPE):
- 
-    segment_offset = len(tree)
-    tree.extend(bytearray(TREE_NODE.size))
-    TREE_NODE.pack_into(tree, segment_offset,c_seg,c_seg_len,c_first_child_offset,NONE,-1,NONE,c_seg_type,0)
-    return segment_offset
-
-
-
-def finalize(tree, tree_values, param_pairs):
-    for (param_node_offset,parent_node_offset) in param_pairs:
-        print(param_pairs)
-        siblings = []
-        _, _, first_child, _, _, _, _, _ = TREE_NODE.unpack_from(tree, parent_node_offset)
-        _, _, param_node_first_child_offset, _, _, _, _, _ = TREE_NODE.unpack_from(tree, param_node_offset)
-        c_seg, c_seg_len, c_first_child_offset = False,False,False
-        if param_node_first_child_offset < 0xFFFFFFFF:
-            c_seg, c_seg_len, c_first_child_offset, _, _, _, c_seg_type, _ = TREE_NODE.unpack_from(tree, param_node_first_child_offset)
-        sibling = first_child
-        tree_length = len(tree)
-        while  sibling:
-            _, _,has_child, next_sibling, methods_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
-            print(f"current sibling {sibling}, next sibling {next_sibling}")
-            if sibling != param_node_offset:
-                siblings.append(sibling)
-            if next_sibling and next_sibling < tree_length: 
-                sibling = next_sibling
-            else:
-                sibling = None
-                
-        #next create a half copy  of one of siblings
-        for s in siblings:
-            print("prepareing to create a real child a copy of the parametrized one")
-            #somewhere to bind parent to parameter?
-            if c_seg:
-                clone_node_offset = create_clone_node(tree,tree_values, param_node_offset,c_seg,c_seg_len,c_first_child_offset,c_seg_type)
-                old_first_child = FIRST_CHILD.unpack_from(tree, s + FIRST_CHILD_OFFSET)
-                FIRST_CHILD.pack_into(tree, s + FIRST_CHILD_OFFSET, clone_node_offset)
-                NEXT_SIBLING.pack_into(tree, clone_node_offset + NEXT_SIBLING_OFFSET, old_first_child[0])
 
         
          
@@ -190,9 +164,15 @@ def decoder(route, method, tree, tree_values, tree_methods):
             i = end
             found, offset = search_segment(mv_segment[start:end], tree, tree_values, parent_offset, seg_type, True)
             if isinstance(offset, tuple):
-                offset, (param_offset, param_length) = offset
-                name = memoryview(tree_values)[param_offset + 1:param_offset + param_length - 1]
-                param_data.append((name, mv_segment[start:end]))
+                if len(offset)==2:
+                    offset, (param_offset, param_length) = offset
+                    name = memoryview(tree_values)[param_offset + 1:param_offset + param_length - 1]
+                    param_data.append((name, mv_segment[start:end]))
+                elif len(offset)==3:
+                    offset, (param_offset, param_length), parent = offset
+                    name = memoryview(tree_values)[param_offset + 1:param_offset + param_length - 1]
+                    param_data.append((name, parent))
+
             if not found:
                 return NOT_FOUND, None
             parent_offset = offset
