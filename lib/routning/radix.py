@@ -175,7 +175,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
             parent_offset = offset
         else:
             i += 1
-
+    print(f"Found {route}")        
     methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + METHODS_OFFSET_OFFSET)[0]
     if methods_offset == -1:
         return NOT_FOUND,None
@@ -187,6 +187,8 @@ def decoder(route, method, tree, tree_values, tree_methods):
     return tree_methods[methods_offset + METHOD_MASKS.size + index], param_data
 
 def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pairs):
+
+    print(method)
     methods_mask, indices_mask, handlers = encode_method_handlers(
         ((method, handler_id),)
     )
