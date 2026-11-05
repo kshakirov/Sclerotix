@@ -49,7 +49,7 @@ def read_segment(seq,i):
 
 
 
-def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs):
+def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs, handler_id):
     segment_offset = len(tree_values)
     segment_length = len(segment)
 
@@ -59,7 +59,7 @@ def create_node(segment, tree,tree_values, parent_offset, seg_type, param_pairs)
     self_offset = len(tree)
     tree_values.extend(segment)
     tree.extend(bytearray(TREE_NODE.size))
-    TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,-1,NONE,seg_type,0)
+    TREE_NODE.pack_into(tree, self_offset,segment_offset,segment_length,NONE,NONE,handler_id,NONE,seg_type,0)
     so, sl, first_child, ns, h_id, param_ref, node_type, reserved = (TREE_NODE.unpack_from(tree, parent_offset))
     if first_child == NONE:
         TREE_NODE.pack_into(tree, parent_offset,so,sl, self_offset,ns,h_id,param_ref,node_type,reserved)
@@ -176,10 +176,9 @@ def decoder(route, method, tree, tree_values, tree_methods):
         else:
             i += 1
     print(f"Found {route}")        
-    handler_offset = HANDLER_OFFSET.unpack_from(tree, parent_offset + HANDLER_OFFSET_OFFSET)[0]
-    if handler_offset == -1:
+    handler_id = HANDLER_OFFSET.unpack_from(tree, parent_offset + HANDLER_OFFSET_OFFSET)[0]
+    if handler_id == 0:
         return NOT_FOUND,None
-    (handler_id,) = HANDLERS_RECORD.unpack_from(tree_methods, handler_offset)
     print(f"handler is {handler_id}")
     return handler_id, param_data
 
@@ -201,25 +200,12 @@ def encoder(route, tree, tree_values, tree_methods, handler_id, param_pairs):
                     parent_offset = offset
                     continue
                 else:
-                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type, param_pairs)
+                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type, param_pairs,handler_id)
                     
                 
             case _:
                 i+= 1
 
-    so, sl, first_child, next_sibling, handler_offset, param_ref, node_type, reserved = TREE_NODE.unpack_from(
-        tree, parent_offset
-    )
-    if handler_offset == -1:
-        handler_offset = len(tree_methods)
-        tree_methods.extend(HANDLERS_RECORD.pack(handler_id))
-        TREE_NODE.pack_into(
-            tree, parent_offset, so, sl, first_child, next_sibling, handler_offset,
-            param_ref, node_type, reserved
-        )
-    else:
-       
-        tree_methods[handler_offset] = handler_id
             
                     
   
@@ -245,7 +231,7 @@ def finalize(tree, tree_values, param_pairs):
         sibling = first_child
         tree_length = len(tree)
         while  sibling:
-            _, _,has_child, next_sibling, handler_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
+            _, _,has_child, next_sibling, handler_id, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
            
             if sibling != param_node_offset:
                 siblings.append(sibling)
