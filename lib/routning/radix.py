@@ -176,10 +176,10 @@ def decoder(route, method, tree, tree_values, tree_methods):
         else:
             i += 1
     print(f"Found {route}")        
-    methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + METHODS_OFFSET_OFFSET)[0]
-    if methods_offset == -1:
+    handler_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + METHODS_OFFSET_OFFSET)[0]
+    if handler_offset == -1:
         return NOT_FOUND,None
-    (handler_id,) = HANDLERS_RECORD.unpack_from(tree_methods, methods_offset)
+    (handler_id,) = HANDLERS_RECORD.unpack_from(tree_methods, handler_offset)
     print(f"handler is {handler_id}")
     return handler_id, param_data
 
@@ -207,19 +207,19 @@ def encoder(route, tree, tree_values, tree_methods, handler_id, param_pairs):
             case _:
                 i+= 1
 
-    so, sl, first_child, next_sibling, methods_offset, param_ref, node_type, reserved = TREE_NODE.unpack_from(
+    so, sl, first_child, next_sibling, handler_offset, param_ref, node_type, reserved = TREE_NODE.unpack_from(
         tree, parent_offset
     )
-    if methods_offset == -1:
-        methods_offset = len(tree_methods)
+    if handler_offset == -1:
+        handler_offset = len(tree_methods)
         tree_methods.extend(HANDLERS_RECORD.pack(handler_id))
         TREE_NODE.pack_into(
-            tree, parent_offset, so, sl, first_child, next_sibling, methods_offset,
+            tree, parent_offset, so, sl, first_child, next_sibling, handler_offset,
             param_ref, node_type, reserved
         )
     else:
        
-        tree_methods[methods_offset] = handler_id
+        tree_methods[handler_offset] = handler_id
             
                     
   
@@ -245,7 +245,7 @@ def finalize(tree, tree_values, param_pairs):
         sibling = first_child
         tree_length = len(tree)
         while  sibling:
-            _, _,has_child, next_sibling, methods_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
+            _, _,has_child, next_sibling, handler_offset, _, _, _ = TREE_NODE.unpack_from(tree, sibling)
            
             if sibling != param_node_offset:
                 siblings.append(sibling)
