@@ -13,7 +13,7 @@ SEGMENT_TYPE_OFFSET = 24
 FIRST_CHILD = struct.Struct("<I")
 NEXT_SIBLING = struct.Struct("<I")
 METHODS_OFFSET = struct.Struct("<i")
-METHOD_RECORD = struct.Struct("<HH9s")
+HANDLERS_RECORD = struct.Struct("<B")
 METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
 NOT_FOUND = -1
@@ -179,19 +179,13 @@ def decoder(route, method, tree, tree_values, tree_methods):
     methods_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + METHODS_OFFSET_OFFSET)[0]
     if methods_offset == -1:
         return NOT_FOUND,None
-    methods_mask, indices_mask = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
-    if methods_mask != indices_mask:
-        raise ValueError("method and occupied-position masks must match")
-    if not methods_mask & method:
-        return METHOD_NOT_ALLOWED,None
-    return tree_methods[methods_offset + METHOD_MASKS.size + index], param_data
+    (handler_id,) = HANDLERS_RECORD.unpack_from(tree_methods, methods_offset)
+    print(f"handler is {handler_id}")
+    return handler_id, param_data
 
-def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pairs):
+def encoder(route, tree, tree_values, tree_methods, handler_id, param_pairs):
 
-    print(method)
-    methods_mask, indices_mask, handlers = encode_method_handlers(
-        ((method, handler_id),)
-    )
+
     length = len(route)
     parent_offset = 0
     i =0
@@ -218,18 +212,14 @@ def encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pa
     )
     if methods_offset == -1:
         methods_offset = len(tree_methods)
-        tree_methods.extend(METHOD_RECORD.pack(methods_mask, indices_mask, handlers))
+        tree_methods.extend(HANDLERS_RECORD.pack(handler_id))
         TREE_NODE.pack_into(
             tree, parent_offset, so, sl, first_child, next_sibling, methods_offset,
             param_ref, node_type, reserved
         )
     else:
-        old_methods, old_indices = METHOD_MASKS.unpack_from(tree_methods, methods_offset)
-        METHOD_MASKS.pack_into(
-            tree_methods, methods_offset,
-            old_methods | methods_mask, old_indices | indices_mask
-        )
-        tree_methods[methods_offset + METHOD_MASKS.size + method_index(method)] = handler_id
+       
+        tree_methods[methods_offset] = handler_id
             
                     
   

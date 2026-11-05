@@ -16,8 +16,8 @@ param_pairs = []
 TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
 
 for route, method, handler_id in route_cases:
-    new_route = b"/" + bytes(method) + b"/" + route
-    encoder(new_route, tree, tree_values, tree_methods, method, handler_id, param_pairs)
+    new_route = b"/" + bytes([method]) + b"/" + route
+    encoder(new_route, tree, tree_values, tree_methods, handler_id, param_pairs)
 
 print(len(tree))
 print(TREE_NODE.size)
