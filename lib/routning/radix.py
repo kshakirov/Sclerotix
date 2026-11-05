@@ -7,12 +7,12 @@ from lib.handling.method_handlers import encode_method_handlers, method_index
 TREE_NODE = struct.Struct("<IIIIiIII")
 FIRST_CHILD_OFFSET = 8
 NEXT_SIBLING_OFFSET = 12
-METHODS_OFFSET_OFFSET = 16
+HANDLER_OFFSET_OFFSET = 16
 PARAM_REF_OFFSET = 20
 SEGMENT_TYPE_OFFSET = 24
 FIRST_CHILD = struct.Struct("<I")
 NEXT_SIBLING = struct.Struct("<I")
-METHODS_OFFSET = struct.Struct("<i")
+HANDLER_OFFSET = struct.Struct("<i")
 HANDLERS_RECORD = struct.Struct("<B")
 METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
@@ -176,7 +176,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
         else:
             i += 1
     print(f"Found {route}")        
-    handler_offset = METHODS_OFFSET.unpack_from(tree, parent_offset + METHODS_OFFSET_OFFSET)[0]
+    handler_offset = HANDLER_OFFSET.unpack_from(tree, parent_offset + HANDLER_OFFSET_OFFSET)[0]
     if handler_offset == -1:
         return NOT_FOUND,None
     (handler_id,) = HANDLERS_RECORD.unpack_from(tree_methods, handler_offset)
