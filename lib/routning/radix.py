@@ -1,5 +1,4 @@
 import struct
-from lib.handling.method_handlers import encode_method_handlers, method_index
 
 
 
@@ -141,14 +140,13 @@ def process_segment():
     pass
 
 
-def decoder(route, method, tree, tree_values, tree_methods):
+def decoder(route, tree, tree_values):
     """Return (handler ID, parameter pairs), or (error code, None).
 
     Each parameter pair contains memoryviews of its name and URL value.
 
     Read-only traversal using the Builder's existing segment functions.
     """
-    index = method_index(method)
     parent_offset = 0
     length = len(route)
     i = 0
@@ -182,7 +180,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
     print(f"handler is {handler_id}")
     return handler_id, param_data
 
-def encoder(route, tree, tree_values, tree_methods, handler_id, param_pairs):
+def encoder(route, tree, tree_values, handler_id, param_pairs):
 
 
     length = len(route)

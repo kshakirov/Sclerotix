@@ -28,13 +28,13 @@ TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
 
 
 for route, method, handler_id in route_cases:
-    encoder(route, tree, tree_values, tree_methods, method, handler_id, param_pairs)
+    encoder(route, tree, tree_values, method, handler_id, param_pairs)
     
 finalize(tree, tree_values, param_pairs)
     
 
 
-decoder(route_cases[0], GET,tree,tree_values, tree_methods)
+decoder(route_cases[0], tree,tree_values)
 
     
 make_router(routes)

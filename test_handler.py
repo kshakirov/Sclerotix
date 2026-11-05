@@ -22,8 +22,8 @@ assert context["calls"] == 2
 
 no_route, params = resolve_handler(b"/index.html", Methods.POST)
 assert params is None
-assert no_route.__name__ == "method_not_allowed"
-assert bytes(no_route({}, None, True, {})).startswith(b"HTTP/1.1 405 Method Not Allowed")
+assert no_route.__name__ == "no_route"
+assert bytes(no_route({}, None, True, {})).startswith(b"HTTP/1.1 404 Not Found")
 
 no_route, params = resolve_handler(b"/missing", Methods.GET)
 assert params is None

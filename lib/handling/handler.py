@@ -1,82 +1,57 @@
-from lib.handling import method_handlers as mh
 from lib.parsing.http_headers_parser import Methods
-from lib.routning.radix import (
-    NONE, TREE_NODE, NOT_FOUND, METHOD_NOT_ALLOWED, encoder, decoder, finalize,
-)
+from lib.routning.radix import NONE, TREE_NODE, NOT_FOUND, encoder, decoder, finalize
 
 
-# Compatibility for callers still materializing the URL.
-def hash_bytes(recognizing_data):
-    url = recognizing_data['url']
-    return bytes(memoryview(url['buffer'])[:url['length']])
+# The parser still uses Enum; the tree uses one byte per method.
+METHOD_PREFIXES = {
+    Methods.GET: b"/\x00", Methods.HEAD: b"/\x01", Methods.POST: b"/\x02",
+    Methods.PUT: b"/\x03", Methods.DELETE: b"/\x04", Methods.PATCH: b"/\x08",
+}
 
 
 def make_router(routes):
-    tree = bytearray(TREE_NODE.size)
+    tree = bytearray()
     tree_values = bytearray()
-    tree_methods = bytearray()
     handlers = []
-    param_pairs = []
     registrations = {}
-    dirty = False
-    TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
-    method_bits = {
-        Methods.GET: mh.GET, Methods.HEAD: mh.HEAD, Methods.POST: mh.POST,
-        Methods.PUT: mh.PUT, Methods.DELETE: mh.DELETE, Methods.PATCH: mh.PATCH,
-    }
+    dirty = True
     response_not_found = memoryview(
         b"HTTP/1.1 404 Not Found\r\n"
         b"Content-Type: text/plain; charset=utf-8\r\n"
         b"Content-Length: 9\r\n"
-        b"Connection: close\r\n"
-        b"\r\n"
-        b"Not Found"
+        b"Connection: close\r\n\r\nNot Found"
     )
 
     def no_route(request_state, arena_fragment, finished, context):
         return response_not_found
 
-    response_method_not_allowed = memoryview(
-        b"HTTP/1.1 405 Method Not Allowed\r\n"
-        b"Content-Length: 0\r\nConnection: close\r\n\r\n"
-    )
-
-    def method_not_allowed(request_state, arena_fragment, finished, context):
-        return response_method_not_allowed
-
     def resolve_handler(url, method):
-        nonlocal tree, tree_values, tree_methods, param_pairs, dirty
+        nonlocal tree, tree_values, dirty
         if dirty:
             tree = bytearray(TREE_NODE.size)
-            tree_values, tree_methods, param_pairs = bytearray(), bytearray(), []
+            tree_values, param_pairs = bytearray(), []
             TREE_NODE.pack_into(tree, 0, 0, 0, NONE, NONE, -1, NONE, 0, 0)
-            for (registered_method, path), handler_id in registrations.items():
-                encoder(path, tree, tree_values, tree_methods, registered_method, handler_id, param_pairs)
+            for path, handler_id in registrations.items():
+                encoder(path, tree, tree_values, handler_id, param_pairs)
             finalize(tree, tree_values, param_pairs)
             dirty = False
-        method = method_bits.get(method, method)
-        handler_id, params = decoder(url, method, tree, tree_values, tree_methods)
+        prefix = METHOD_PREFIXES[method]
+        handler_id, params = decoder(prefix + url, tree, tree_values)
         if handler_id == NOT_FOUND:
             return no_route, None
-        if handler_id == METHOD_NOT_ALLOWED:
-            return method_not_allowed, None
         return handlers[handler_id], params
 
     def add_route(method, url, handler):
         nonlocal dirty
-        method = method_bits.get(method, method)
-        mh.method_index(method)
+        path = METHOD_PREFIXES[method] + url
         for handler_id, registered in enumerate(handlers):
             if registered is handler:
                 break
         else:
             handler_id = len(handlers)
-            if handler_id >= 256:
-                raise ValueError("the handler registry supports at most 256 functions")
-        registrations[(method, url)] = handler_id
-        dirty = True
-        if handler_id == len(handlers):
             handlers.append(handler)
+        registrations[path] = handler_id
+        dirty = True
 
     for (method, url), handler in routes.items():
         add_route(method, url, handler)
