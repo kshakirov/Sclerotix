@@ -13,7 +13,7 @@ SEGMENT_TYPE_OFFSET = 24
 FIRST_CHILD = struct.Struct("<I")
 NEXT_SIBLING = struct.Struct("<I")
 HANDLER_OFFSET = struct.Struct("<i")
-HANDLERS_RECORD = struct.Struct("<B")
+HANDLERS_RECORD = struct.Struct("<i")
 METHOD_MASKS = struct.Struct("<HH")
 NONE = 0xFFFFFFFF
 NOT_FOUND = -1
@@ -177,7 +177,7 @@ def decoder(route, method, tree, tree_values, tree_methods):
             i += 1
     print(f"Found {route}")        
     handler_id = HANDLER_OFFSET.unpack_from(tree, parent_offset + HANDLER_OFFSET_OFFSET)[0]
-    if handler_id == 0:
+    if handler_id == -1:
         return NOT_FOUND,None
     print(f"handler is {handler_id}")
     return handler_id, param_data
@@ -200,13 +200,13 @@ def encoder(route, tree, tree_values, tree_methods, handler_id, param_pairs):
                     parent_offset = offset
                     continue
                 else:
-                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type, param_pairs,handler_id)
+                    parent_offset = create_node(mv_segment[start:end],tree,tree_values, parent_offset, seg_type, param_pairs, -1)
                     
                 
             case _:
                 i+= 1
 
-            
+    HANDLERS_RECORD.pack_into(tree, parent_offset + HANDLER_OFFSET_OFFSET, handler_id)
                     
   
 
