@@ -138,11 +138,28 @@ baseline_remote_post_16b_10k_10s_port18082/YYYYMMDDTHHMMSSZ/
 `metadata.env` и `summary.csv` запрос явно записывается как
 `post_index_16b`, метод — как `POST`, размер тела — как `16`.
 
-Сравнение последней серии с историческим baseline:
+Сравнение последней серии **GET** с историческим GET baseline:
 
 ```bash
 ./docs/performance/compare_baseline.py
 ```
+
+Без `--baseline` скрипт всегда использует исторический **GET** baseline,
+даже если последняя серия была POST. Текущий отчёт выбирается как самый
+свежий `combined-summary.json` среди всех сценариев.
+
+Для сравнения последней серии **POST с телом 16 байт** с POST-серией
+от 2026-10-22 на `pmd-pims-aio` выполнить из корня проекта:
+
+```bash
+./docs/performance/compare_baseline.py --baseline \
+  var/performance/raw/2026-10-22/post_index_16b/baseline_remote_post_16b_10k_10s_port18082/20261022T061048Z/combined-summary.json
+```
+
+Эта команда предполагает, что самая свежая серия — нужный POST 16 B.
+Проверить строки `BASELINE`, `CURRENT` и сообщения о совместимости профилей.
+Для другого размера тела нужен baseline того же размера. Сырые отчёты
+хранятся только на машине замера: указанного файла может не быть локально.
 
 Другой current-отчёт или baseline можно указать явно:
 

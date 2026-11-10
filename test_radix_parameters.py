@@ -9,7 +9,16 @@ def a(*args): pass
 def b(*args): pass
 
 
+shared_posts = (
+    (GET, b"/users/me/posts/read", a),
+    (GET, b"/users/{id}/posts/good", b),
+)
+
 cases = (
+    ("shared posts: literal", shared_posts,
+     b"/users/me/posts/read", GET, a, []),
+    ("shared posts: parameter", shared_posts,
+     b"/users/me/posts/good", GET, b, [(b"id", b"me")]),
     ("registration order", (
         (GET, b"/users/me", a),
         (GET, b"/users/{id}/posts/good", b),
