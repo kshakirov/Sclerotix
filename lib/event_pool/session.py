@@ -20,7 +20,7 @@ def init(host,port,quant):
 
     
 def session_step(session):
-    session["step"]()
+    return session["step"]()
 
 def create_accept_session(server_socket,server_fd,sessions):
     session = {}
@@ -30,7 +30,29 @@ def create_accept_session(server_socket,server_fd,sessions):
         client_socket, client_addr = server_socket.accept()
         client_socket.setblocking(False)
         c_fd = client_socket.fileno()
-        return STATE_ACCEPTED, c_fd 
+        return STATE_ACCEPTED, c_fd, (client_socket, client_addr) 
     session["step"]  = accept_step
+    session["queued"] = False
 
 
+def create_client_session(sessions, c_fd, socket_data):
+    (client_socket, client_addr) = socket_data
+    session = {
+        "socket": client_socket,
+        "addr": client_addr,
+        "feed": f.make_streaming_request_parser(),
+        "response": None,
+        "ctx": {}
+        
+    }
+    sessions[c_fd] = session
+    def read_step():
+        pass
+    def write_step():
+        pass
+    def handle_step():
+        pass
+    session["read_step"]= read_step
+    session["write_step"] = write_step
+    session["handle_step"] = handle_step
+    session["step"] = session["read_step"]

@@ -15,6 +15,7 @@ BUDGET= 2
 
 run_queue = deque()
 epoll = select.epoll()
+epoll.register(sock_fd, select.EPOLLIN)
 while True:
     timeout = 0 if len(run_queue)> 0 else -1
     events = epoll.poll(timeout)
@@ -33,9 +34,12 @@ while True:
         session = run_queue.popleft()
         session["queued"] = False
         if session["type"]== s.SESSION_TYPE_ACCEPT:
-            action, cliend_socket_fd  = s.session_step(session)
+            action, cliend_socket_fd,socket_data  = s.session_step(session)
             if action == s.STATE_ACCEPTED:
-                pass
+                s.create_client_session(sessions,cliend_socket_fd,socket_data)
+                epoll.register(cliend_socket_fd, select.EPOLLIN)
+                print(f"All done {sessions}")
+                exit()
         if action == STATE_WAIT_READ:
             epoll.modify(session["fd"],  select.EPOLLIN)
         elif action == STATE_WAIT_WRITE:
