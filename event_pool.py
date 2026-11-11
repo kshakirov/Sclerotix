@@ -1,19 +1,14 @@
 import select
 from collections import deque
+import lib.event_pool.session as s
+
 
 print("Evnet pool")
 
 sessions = {}
 
-def session_step(s):
-    pass
-
-def session_close(s):
-    pass
-session = {
-    "queued":False
-}
-
+server_sock, sock_fd = s.init("127.0.0.1",8080,1024)
+s.create_accept_session(server_sock,sock_fd,sessions)
 
 BUDGET= 2
 
@@ -28,13 +23,19 @@ while True:
         if session and  not session["queued"]:
             session["queued"] = True
             run_queue.append(session)
+        else:
+            # create session accept, read write, user session
+            print(f"There is still no session for fd {fd} and event {event}")
 
     for _ in range(BUDGET):
         if not run_queue:
             break
         session = run_queue.popleft()
         session["queued"] = False
-        action = session_step(session)
+        if session["type"]== s.SESSION_TYPE_ACCEPT:
+            action, cliend_socket_fd  = s.session_step(session)
+            if action == s.STATE_ACCEPTED:
+                pass
         if action == STATE_WAIT_READ:
             epoll.modify(session["fd"],  select.EPOLLIN)
         elif action == STATE_WAIT_WRITE:
