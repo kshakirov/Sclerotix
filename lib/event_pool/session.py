@@ -52,7 +52,7 @@ def create_client_session(sessions, c_fd, socket_data, routes):
         "response": None,
         "type": SESSION_TYPE_CLIENT,
         "ctx": {},
-        "resolve": router.make_router(routes[0]),
+        "resolve": router.make_router(routes)[0],
         "queued" : False,
         "data":{ #just declaring for clarity 
             "status": None,
@@ -81,7 +81,7 @@ def create_client_session(sessions, c_fd, socket_data, routes):
                 session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
                 if session["data"]["recognizing_data"]['url']['done']:
                     url = session["data"]["recognizing_data"]['url']
-                    handler, params = resolve_handler(
+                    handler, params = session['resolve'](
                         memoryview(url['buffer'])[:url['length']],
                         session["data"]["recognizing_data"]['methods']['guess']
                     )

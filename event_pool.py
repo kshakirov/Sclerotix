@@ -4,7 +4,7 @@ import lib.event_pool.session as s
 
 
 print("Evnet pool")
-
+ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
 sessions = {}
 
 server_sock, sock_fd = s.init("127.0.0.1",8080,1024)
@@ -36,7 +36,7 @@ while True:
         if session["type"]== s.SESSION_TYPE_ACCEPT:
             action, cliend_socket_fd,socket_data  = s.session_step(session)
             if action == s.STATE_ACCEPTED:
-                s.create_client_session(sessions,cliend_socket_fd,socket_data)
+                s.create_client_session(sessions,cliend_socket_fd,socket_data, ROUTES)
                 epoll.register(cliend_socket_fd, select.EPOLLIN)
                 print(f"All done {sessions}")
         else:
