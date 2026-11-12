@@ -45,6 +45,7 @@ def create_client_session(sessions, c_fd, socket_data):
     (client_socket, client_addr) = socket_data
     session = {
         "socket": client_socket,
+        "socket_fd": c_fd,
         "addr": client_addr,
         "feed": f.make_streaming_request_parser(),
         "response": None,
@@ -59,45 +60,65 @@ def create_client_session(sessions, c_fd, socket_data):
         
     }
     sessions[c_fd] = session
+
+    def clean_up_closed_connection():
+
+        try:
+            epoll.unregister(session['socket_fd'])
+        except Exception:
+            pass
+        sock = session["socket"]
+        sock.close()
+    
     def read_step():
         try:
-            session["socket"].recv(1024) #must be quant here
-            session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
-            if recognizing_data['url']['done']:
-                url = recognizing_data['url']
-                handler, params = resolve_handler(
-                    memoryview(url['buffer'])[:url['length']],
-                    recognizing_data['methods']['guess']
-                )
-                session["data"]['handler'] = handler
-                session['ctx']['params'] = params
-                session["step"] = handle_step
-                return STATE_WAIT_HANDLE
-            return STATE_WAIT_READ
+            data = session["socket"].recv(1024) #must be quant here
+            if data:
+                session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
+                if recognizing_data['url']['done']:
+                    url = recognizing_data['url']
+                    handler, params = resolve_handler(
+                        memoryview(url['buffer'])[:url['length']],
+                        recognizing_data['methods']['guess']
+                    )
+                    session["data"]['handler'] = handler
+                    session['ctx']['params'] = params
+                    session["step"] = handle_step
+                    return STATE_WAIT_HANDLE
+                return STATE_WAIT_READ
+            else:
+                #connection closed by client maybe
+                session['step'] = error_step
+                return STATE_ERROR
         except BlockingIOError:
             pass
         except ConnectionResetError:
-            clean_up_closed_connection(fd)
+            session['step'] = error_step
+            return STATE_ERROR
     def write_step():
         sock = session["socket"]
-        pending_response = session['response']
+        pending_response = session['data']['response']
 
         if pending_response:
             try:
                 sent_bytes = sock.send(pending_response)
                 if sent_bytes < len(pending_response):
                     session['response'] = pending_response[sent_bytes:]
+                    session['step'] = write_step
+                    return STATE_WAIT_WRITE
                 else:
                     # Ответ полностью ушёл — закрываем соединение (Keep-Alive сделаем позже)
-                    clean_up_closed_connection(fd)
+                    session['step'] = error_step
+                    return STATE_ERROR
             except BlockingIOError:
                 pass
             except ConnectionResetError:
-                clean_up_closed_connection(fd)
+                session['step'] = error_step
+                return STATE_ERROR
     def done_step():
-        pass
+        clean_up_closed_connection()
     def error_step():
-        pass
+        clean_up_closed_connection()
     def handle_step():
         if session["data"]["status"] == f.ParserResult.NEED_MORE_DATA:
             if session["data"].get('handler'):
