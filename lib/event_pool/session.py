@@ -5,7 +5,8 @@ import lib.parsing.factory as f
 import lib.handling.handler as router
 
 SESSION_TYPE_ACCEPT=0
-STATE_ACCEPTED=0
+SESSION_TYPE_CLIENT=1
+state_ACCEPTED=0
 
 STATE_WAIT_READ = 1
 STATE_WAIT_WRITE = 2
@@ -41,7 +42,7 @@ def create_accept_session(server_socket,server_fd,sessions):
     session["queued"] = False
 
 
-def create_client_session(sessions, c_fd, socket_data):
+def create_client_session(sessions, c_fd, socket_data, routes):
     (client_socket, client_addr) = socket_data
     session = {
         "socket": client_socket,
@@ -49,7 +50,10 @@ def create_client_session(sessions, c_fd, socket_data):
         "addr": client_addr,
         "feed": f.make_streaming_request_parser(),
         "response": None,
+        "type": SESSION_TYPE_CLIENT,
         "ctx": {},
+        "resolve": router.make_router(routes[0]),
+        "queued" : False,
         "data":{ #just declaring for clarity 
             "status": None,
             "arena":None,
@@ -75,11 +79,11 @@ def create_client_session(sessions, c_fd, socket_data):
             data = session["socket"].recv(1024) #must be quant here
             if data:
                 session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
-                if recognizing_data['url']['done']:
-                    url = recognizing_data['url']
+                if session["data"]["recognizing_data"]['url']['done']:
+                    url = session["data"]["recognizing_data"]['url']
                     handler, params = resolve_handler(
                         memoryview(url['buffer'])[:url['length']],
-                        recognizing_data['methods']['guess']
+                        session["data"]["recognizing_data"]['methods']['guess']
                     )
                     session["data"]['handler'] = handler
                     session['ctx']['params'] = params
@@ -125,12 +129,12 @@ def create_client_session(sessions, c_fd, socket_data):
                 session['data']['handler'](session['data']['recognizing_data'], session['data']['arena'], False, session['ctx'])
                 session["step"] = read_step
                 return STATE_WAIT_READ
-        elif status == f.ParserResult.ERROR:
+        elif session["data"]['status'] == f.ParserResult.ERROR:
                 #clean_up_closed_connection(fd) later to
             session["step"] = error_step
             return STATE_ERROR
 
-        elif status == f.ParserResult.BODY_PARSING_FINISHED:
+        elif session["data"]['status'] == f.ParserResult.BODY_PARSING_FINISHED:
             if session['data'].get('handler'):
                 session['data']['response'] = session['data']['handler'](session['data']['recognizing_data'], session['data']['arena'], True, session['ctx'])
             session["step"] = write_step    
