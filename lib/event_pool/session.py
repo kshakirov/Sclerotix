@@ -7,6 +7,12 @@ import lib.handling.handler as router
 SESSION_TYPE_ACCEPT=0
 STATE_ACCEPTED=0
 
+STATE_WAIT_READ = 1
+STATE_WAIT_WRITE = 2
+STATE_YIELD = 3
+STATE_DONE= 4
+STATE_ERROR = 5
+STATE_WAIT_HANDLE = 7
 
 def init(host,port,quant):
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -42,16 +48,54 @@ def create_client_session(sessions, c_fd, socket_data):
         "addr": client_addr,
         "feed": f.make_streaming_request_parser(),
         "response": None,
-        "ctx": {}
+        "ctx": {},
+        "data":{ #just declaring for clarity 
+            "status": None,
+            "arena":None,
+            "recognizing_data":None,
+            "handler": None,
+            "response": None
+        }
         
     }
     sessions[c_fd] = session
     def read_step():
-        pass
+        session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
+        if recognizing_data['url']['done']:
+            url = recognizing_data['url']
+            handler, params = resolve_handler(
+                memoryview(url['buffer'])[:url['length']],
+                recognizing_data['methods']['guess']
+            )
+            session["data"]['handler'] = handler
+            session['ctx']['params'] = params
+            session["step"]=handle_step
+            return STATE_WAIT_HANDLE
+        return STATE_WAIT_READ
     def write_step():
         pass
-    def handle_step():
+    def done_step():
         pass
+    def error_step():
+        pass
+    def handle_step():
+        if session["data"]["status"] == f.ParserResult.NEED_MORE_DATA:
+            if session["data"].get('handler'):
+                session['data']['handler'](recognizing_data, arena, False, session['ctx'])
+                session["step"] = read_step
+                return STATE_WAIT_READ
+        elif status == f.ParserResult.ERROR:
+                #clean_up_closed_connection(fd) later to
+            session["step"] = error_step
+            return STATE_ERROR
+
+        elif status == f.ParserResult.BODY_PARSING_FINISHED:
+            if session['data'].get('handler'):
+                session['data']['response'] = session['handler'](recognizing_data, arena, True, session['ctx'])
+            session["step"] = write_step    
+            return STATE_WAIT_WRITE
+                
+        
     session["read_step"]= read_step
     session["write_step"] = write_step
     session["handle_step"] = handle_step

@@ -40,14 +40,14 @@ while True:
                 epoll.register(cliend_socket_fd, select.EPOLLIN)
                 print(f"All done {sessions}")
                 exit()
-        if action == STATE_WAIT_READ:
+        if action == s.STATE_WAIT_READ:
             epoll.modify(session["fd"],  select.EPOLLIN)
-        elif action == STATE_WAIT_WRITE:
+        elif action == s.STATE_WAIT_WRITE:
             epoll.modify(session["fd"], select.EPOLLOUT)
-        elif action == STATE_YIELD:
+        elif action == s.STATE_WAIT_HANDLE:
             session["queued"] = True
             run_queue.append(session)
-        elif action in (STATE_DONE, STATE_ERROR):
+        elif action in (s.STATE_DONE, s.STATE_ERROR):
             epoll.unregister(session["fd"])
             session_close(session)
             del sessions[session["fd"]]
