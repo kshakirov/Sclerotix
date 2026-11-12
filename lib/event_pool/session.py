@@ -91,7 +91,7 @@ def create_client_session(sessions, c_fd, socket_data):
                 session['step'] = error_step
                 return STATE_ERROR
         except BlockingIOError:
-            pass
+            return STATE_WAIT_READ
         except ConnectionResetError:
             session['step'] = error_step
             return STATE_ERROR
@@ -103,15 +103,15 @@ def create_client_session(sessions, c_fd, socket_data):
             try:
                 sent_bytes = sock.send(pending_response)
                 if sent_bytes < len(pending_response):
-                    session['response'] = pending_response[sent_bytes:]
+                    session['data']['response'] = pending_response[sent_bytes:]
                     session['step'] = write_step
                     return STATE_WAIT_WRITE
                 else:
                     # Ответ полностью ушёл — закрываем соединение (Keep-Alive сделаем позже)
-                    session['step'] = error_step
-                    return STATE_ERROR
+                    session['step'] = done_step
+                    return STATE_DONE
             except BlockingIOError:
-                pass
+                return STATE_WAIT_WRITE
             except ConnectionResetError:
                 session['step'] = error_step
                 return STATE_ERROR
@@ -122,7 +122,7 @@ def create_client_session(sessions, c_fd, socket_data):
     def handle_step():
         if session["data"]["status"] == f.ParserResult.NEED_MORE_DATA:
             if session["data"].get('handler'):
-                session['data']['handler'](recognizing_data, arena, False, session['ctx'])
+                session['data']['handler'](session['data']['recognizing_data'], session['data']['arena'], False, session['ctx'])
                 session["step"] = read_step
                 return STATE_WAIT_READ
         elif status == f.ParserResult.ERROR:
@@ -132,7 +132,7 @@ def create_client_session(sessions, c_fd, socket_data):
 
         elif status == f.ParserResult.BODY_PARSING_FINISHED:
             if session['data'].get('handler'):
-                session['data']['response'] = session['handler'](recognizing_data, arena, True, session['ctx'])
+                session['data']['response'] = session['data']['handler'](session['data']['recognizing_data'], session['data']['arena'], True, session['ctx'])
             session["step"] = write_step    
             return STATE_WAIT_WRITE
                 
