@@ -60,20 +60,40 @@ def create_client_session(sessions, c_fd, socket_data):
     }
     sessions[c_fd] = session
     def read_step():
-        session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
-        if recognizing_data['url']['done']:
-            url = recognizing_data['url']
-            handler, params = resolve_handler(
-                memoryview(url['buffer'])[:url['length']],
-                recognizing_data['methods']['guess']
-            )
-            session["data"]['handler'] = handler
-            session['ctx']['params'] = params
-            session["step"]=handle_step
-            return STATE_WAIT_HANDLE
-        return STATE_WAIT_READ
+        try:
+            session["socket"].recv(1024) #must be quant here
+            session["data"]["status"],session["data"]["arena"],session["data"]["recognizing_data"] = session['feed'](data)
+            if recognizing_data['url']['done']:
+                url = recognizing_data['url']
+                handler, params = resolve_handler(
+                    memoryview(url['buffer'])[:url['length']],
+                    recognizing_data['methods']['guess']
+                )
+                session["data"]['handler'] = handler
+                session['ctx']['params'] = params
+                session["step"] = handle_step
+                return STATE_WAIT_HANDLE
+            return STATE_WAIT_READ
+        except BlockingIOError:
+            pass
+        except ConnectionResetError:
+            clean_up_closed_connection(fd)
     def write_step():
-        pass
+        sock = session["socket"]
+        pending_response = session['response']
+
+        if pending_response:
+            try:
+                sent_bytes = sock.send(pending_response)
+                if sent_bytes < len(pending_response):
+                    session['response'] = pending_response[sent_bytes:]
+                else:
+                    # Ответ полностью ушёл — закрываем соединение (Keep-Alive сделаем позже)
+                    clean_up_closed_connection(fd)
+            except BlockingIOError:
+                pass
+            except ConnectionResetError:
+                clean_up_closed_connection(fd)
     def done_step():
         pass
     def error_step():
