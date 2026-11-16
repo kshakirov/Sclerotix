@@ -2,6 +2,7 @@ import select
 from collections import deque
 import lib.event_pool.session as s
 import lib.parsing.factory as f
+from lib.handling.handler import make_router
 
 print("Evnet pool")
 RESPONSE_OK = memoryview(
@@ -16,6 +17,7 @@ def handle_post(request_state, arena_fragment, finished, context):
         return RESPONSE_OK
 
 ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
+resolve_handler = make_router(ROUTES)[0]
 sessions = {}
 
 server_sock, sock_fd = s.init("127.0.0.1",18082,1024)
@@ -47,7 +49,7 @@ while True:
         if session["type"]== s.SESSION_TYPE_ACCEPT:
             action, cliend_socket_fd,socket_data  = s.session_step(session)
             if action == s.STATE_ACCEPTED:
-                s.create_client_session(sessions,cliend_socket_fd,socket_data, ROUTES)
+                s.create_client_session(sessions,cliend_socket_fd,socket_data, resolve_handler)
                 epoll.register(cliend_socket_fd, select.EPOLLIN)
         else:
             action  = s.session_step(session)

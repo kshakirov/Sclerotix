@@ -2,7 +2,6 @@ import socket
 import select
 from typing import Dict, Any
 import lib.parsing.factory as f
-import lib.handling.handler as router
 
 SESSION_TYPE_ACCEPT=0
 SESSION_TYPE_CLIENT=1
@@ -42,7 +41,7 @@ def create_accept_session(server_socket,server_fd,sessions):
     session["queued"] = False
 
 
-def create_client_session(sessions, c_fd, socket_data, routes):
+def create_client_session(sessions, c_fd, socket_data, resolve_handler):
     (client_socket, client_addr) = socket_data
     session = {
         "socket": client_socket,
@@ -52,7 +51,7 @@ def create_client_session(sessions, c_fd, socket_data, routes):
         "response": None,
         "type": SESSION_TYPE_CLIENT,
         "ctx": {},
-        "resolve": router.make_router(routes)[0],
+        "resolve": resolve_handler,
         "queued" : False,
         "data":{ #just declaring for clarity 
             "status": None,
