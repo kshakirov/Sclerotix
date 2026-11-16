@@ -20,7 +20,7 @@ readonly cooldown_margin=100
 readonly cooldown_timeout=180
 readonly target_file="docs/performance/requests/post_index_16b.targets"
 readonly body_file="docs/performance/requests/bodies/body-16b.txt"
-readonly server_script="${SERVER_SCRIPT:-run_performance_server.py}"
+readonly server_script="${SERVER_SCRIPT:-event_pool.py}"
 
 vegeta="${VEGETA:-$HOME/.local/bin/vegeta}"
 python="${PYTHON:-python3}"
@@ -385,6 +385,7 @@ series_dir="var/performance/raw/$day/$request_id/$profile/$timestamp"
 mkdir -p "$series_dir"
 
 printf 'Profile:             %s\n' "$profile"
+printf 'Server:              %s\n' "$server_script"
 printf 'Commit:              %s\n' "$git_commit"
 printf 'Output:              %s\n' "$series_dir"
 printf 'Background TIME_WAIT:%s (cooldown limit %s)\n' \
