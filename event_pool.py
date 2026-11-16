@@ -1,9 +1,20 @@
 import select
 from collections import deque
 import lib.event_pool.session as s
-
+import lib.parsing.factory as f
 
 print("Evnet pool")
+RESPONSE_OK = memoryview(
+    b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+)
+
+
+def handle_post(request_state, arena_fragment, finished, context):
+    if arena_fragment:
+        context["body_bytes"] = context.get("body_bytes", 0) + len(arena_fragment)
+    if finished:
+        return RESPONSE_OK
+
 ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
 sessions = {}
 
@@ -50,6 +61,7 @@ while True:
                 session["queued"] = True
                 run_queue.append(session)
             elif action in (s.STATE_DONE, s.STATE_ERROR):
+                epoll.unregister(session['socket_fd'])
                 s.session_step(session)
                 del sessions[session["socket_fd"]]
         

@@ -6,7 +6,7 @@ import lib.handling.handler as router
 
 SESSION_TYPE_ACCEPT=0
 SESSION_TYPE_CLIENT=1
-state_ACCEPTED=0
+STATE_ACCEPTED=0
 
 STATE_WAIT_READ = 1
 STATE_WAIT_WRITE = 2
@@ -66,11 +66,6 @@ def create_client_session(sessions, c_fd, socket_data, routes):
     sessions[c_fd] = session
 
     def clean_up_closed_connection():
-
-        try:
-            epoll.unregister(session['socket_fd'])
-        except Exception:
-            pass
         sock = session["socket"]
         sock.close()
     
@@ -89,6 +84,9 @@ def create_client_session(sessions, c_fd, socket_data, routes):
                     session['ctx']['params'] = params
                     session["step"] = handle_step
                     return STATE_WAIT_HANDLE
+                if session["data"]["status"]== f.ParserResult.ERROR:
+                    session['step'] = error_step
+                    return STATE_ERROR
                 return STATE_WAIT_READ
             else:
                 #connection closed by client maybe
@@ -119,6 +117,10 @@ def create_client_session(sessions, c_fd, socket_data, routes):
             except ConnectionResetError:
                 session['step'] = error_step
                 return STATE_ERROR
+        else:
+            # Ответ пустой
+            session['step'] = done_step
+            return STATE_DONE
     def done_step():
         clean_up_closed_connection()
     def error_step():
@@ -127,6 +129,9 @@ def create_client_session(sessions, c_fd, socket_data, routes):
         if session["data"]["status"] == f.ParserResult.NEED_MORE_DATA:
             if session["data"].get('handler'):
                 session['data']['handler'](session['data']['recognizing_data'], session['data']['arena'], False, session['ctx'])
+                session["step"] = read_step
+                return STATE_WAIT_READ
+            else:
                 session["step"] = read_step
                 return STATE_WAIT_READ
         elif session["data"]['status'] == f.ParserResult.ERROR:
