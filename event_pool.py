@@ -49,7 +49,6 @@ while True:
             if action == s.STATE_ACCEPTED:
                 s.create_client_session(sessions,cliend_socket_fd,socket_data, ROUTES)
                 epoll.register(cliend_socket_fd, select.EPOLLIN)
-                print(f"All done {sessions}")
         else:
             action  = s.session_step(session)
                 
