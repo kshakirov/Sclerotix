@@ -20,6 +20,7 @@ readonly cooldown_margin=100
 readonly cooldown_timeout=180
 readonly target_file="docs/performance/requests/post_index_16b.targets"
 readonly body_file="docs/performance/requests/bodies/body-16b.txt"
+readonly server_script="${SERVER_SCRIPT:-run_performance_server.py}"
 
 vegeta="${VEGETA:-$HOME/.local/bin/vegeta}"
 python="${PYTHON:-python3}"
@@ -86,7 +87,7 @@ start_server() {
         fail "port $port is already occupied"
     fi
 
-    taskset -c "$server_cpu" "$python" run_performance_server.py \
+    taskset -c "$server_cpu" "$python" "$server_script" \
         >"$log_file" 2>&1 &
     server_pid=$!
 
@@ -167,6 +168,7 @@ write_metadata() {
         printf 'VEGETA_VERSION=%s\n' "$vegeta_version"
         printf 'REQUEST_ID=%s\n' "$request_id"
         printf 'PROFILE=%s\n' "$profile"
+        printf 'SERVER_SCRIPT=%s\n' "$server_script"
         printf 'PORT=%s\n' "$port"
         printf 'RATE=%s\n' "$rate"
         printf 'DURATION=%s\n' "$duration"
@@ -320,6 +322,7 @@ summary = {
         "keepalive": False,
         "server_cpu": int(rows[0]["metadata"]["SERVER_CPU"]),
         "vegeta_cpus": rows[0]["metadata"]["VEGETA_CPUS"],
+        "server_script": rows[0]["metadata"]["SERVER_SCRIPT"],
     },
     "commit": commit,
     "sample_n": len(combined),
@@ -350,6 +353,7 @@ require_command ss
 require_command git
 require_command "$python"
 [[ -x "$vegeta" ]] || fail "Vegeta is not executable at $vegeta"
+[[ -f "$server_script" ]] || fail "server script not found: $server_script"
 [[ -f "$target_file" ]] || fail "target file not found: $target_file"
 [[ -f "$body_file" ]] || fail "body file not found: $body_file"
 [[ "$(wc -c < "$body_file")" -eq 16 ]] || fail "POST body must be exactly 16 bytes"

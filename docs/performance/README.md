@@ -137,6 +137,17 @@ warm-up и заново для каждого измеряемого прого�
 RUNS=1 ./docs/performance/run_remote_post_16b_baseline.sh
 ```
 
+Выбор нового кооперативного сервера (он должен слушать порт `18082`):
+
+```bash
+SERVER_SCRIPT=event_pool.py RUNS=1 ./docs/performance/run_remote_post_16b_baseline.sh
+```
+
+Для полной серии из пяти прогонов убрать `RUNS=1`. Без `SERVER_SCRIPT`
+по-прежнему запускается `run_performance_server.py`. Выбор сохраняется
+как `SERVER_SCRIPT` в metadata и `server_script` в профиле общей сводки.
+Сервер вручную поднимать не нужно: скрипт запускает и останавливает его сам.
+
 После проверки результата полная серия запускается без переопределения `RUNS`:
 
 ```bash
