@@ -23,7 +23,7 @@ sessions = {}
 server_sock, sock_fd = s.init("127.0.0.1",18082,1024)
 s.create_accept_session(server_sock,sock_fd,sessions)
 
-BUDGET= 2
+BUDGET= 64
 
 
 run_queue = deque()
