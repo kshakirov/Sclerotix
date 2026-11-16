@@ -18,7 +18,7 @@ def handle_post(request_state, arena_fragment, finished, context):
 ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
 sessions = {}
 
-server_sock, sock_fd = s.init("127.0.0.1",8080,1024)
+server_sock, sock_fd = s.init("127.0.0.1",18082,1024)
 s.create_accept_session(server_sock,sock_fd,sessions)
 
 BUDGET= 2

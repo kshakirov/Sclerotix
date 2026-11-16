@@ -173,11 +173,11 @@ def decoder(route, tree, tree_values):
             parent_offset = offset
         else:
             i += 1
-    print(f"Found {route}")        
+
     handler_id = HANDLER_OFFSET.unpack_from(tree, parent_offset + HANDLER_OFFSET_OFFSET)[0]
     if handler_id == -1:
         return NOT_FOUND,None
-    print(f"handler is {handler_id}")
+
     return handler_id, param_data
 
 def encoder(route, tree, tree_values, handler_id, param_pairs):
