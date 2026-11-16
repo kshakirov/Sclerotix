@@ -37,9 +37,6 @@ while True:
         if session and  not session["queued"]:
             session["queued"] = True
             run_queue.append(session)
-        else:
-            # create session accept, read write, user session
-            print(f"There is still no session for fd {fd} and event {event}")
 
     for _ in range(BUDGET):
         if not run_queue:
