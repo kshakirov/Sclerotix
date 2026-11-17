@@ -4,13 +4,15 @@ import requests
 import json
 import random
 
+
+port = 18082
 # Данные, которые отправляем
 data = { "name" : "Testing handler"}
 
 
 # Преобразуем в JSON-строку
 json_data = json.dumps(data)
-
+ 
 # Преобразуем в байты для подсчета длины
 bytes_data = json_data.encode('utf-8')
 
@@ -23,7 +25,7 @@ headers = {
 
 # Отправляем запрос
 response = requests.post(
-    'http://localhost:8080/index.html',
+    f"http://localhost:{port}/index.html",
     headers=headers,
     data=bytes_data  # Важно: передаем байты, не json!
 )
@@ -41,7 +43,7 @@ def generate_chunks():
         yield chunk
         
 response = requests.post(
-    'http://localhost:8080/generator/1',
+    f"http://localhost:{port}/generator/1",
 
     data=generate_chunks()  # Важно: передаем байты, не json!
 )

@@ -29,16 +29,23 @@ def session_step(session):
     return session["step"]()
 
 def create_accept_session(server_socket,server_fd,sessions):
-    session = {}
-    sessions[server_fd]= session
-    session["type"]= SESSION_TYPE_ACCEPT
-    def accept_step():
-        client_socket, client_addr = server_socket.accept()
-        client_socket.setblocking(False)
-        c_fd = client_socket.fileno()
-        return STATE_ACCEPTED, c_fd, (client_socket, client_addr) 
-    session["step"]  = accept_step
-    session["queued"] = False
+
+        session = {}
+        sessions[server_fd]= session
+        session["type"]= SESSION_TYPE_ACCEPT
+        def accept_step():
+            try:
+                client_socket, client_addr = server_socket.accept()
+                client_socket.setblocking(False)
+                c_fd = client_socket.fileno()
+                return STATE_ACCEPTED, c_fd, (client_socket, client_addr)
+            
+            except BlockingIOError:
+                return STATE_WAIT_READ, None, None
+    
+        session["step"]  = accept_step
+        session["queued"] = False
+
 
 
 def create_client_session(sessions, c_fd, socket_data, resolve_handler):
