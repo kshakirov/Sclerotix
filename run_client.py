@@ -23,6 +23,16 @@ headers = {
 
 }
 
+
+response = requests.get(
+    f"http://localhost:{port}/user/list",
+    headers=headers,
+    data=bytes_data  # Важно: передаем байты, не json!
+)
+
+
+
+
 # Отправляем запрос
 response = requests.post(
     f"http://localhost:{port}/index.html",

@@ -1,4 +1,4 @@
-from lib.handling.method_handlers import GET,POST
+GET, POST = 0, 2
 from lib.routning.radix import NONE, TREE_NODE, encoder, finalize, decoder
 
 tree = bytearray(TREE_NODE.size)
@@ -18,10 +18,10 @@ for route, method, handler_id in (
 finalize(tree, tree_values, param_pairs)
 
 assert decoder(b"/" + bytes([GET]) + b"/users/me", tree, tree_values)[0] == 10
-assert decoder(b"/\x01/users/me/text/read", tree, tree_values)[0] == 20
-handler_id, params = decoder(b"/\x01/users/3/posts/good", tree, tree_values)
+assert decoder(b"/" + bytes([GET]) + b"/users/me/text/read", tree, tree_values)[0] == 20
+handler_id, params = decoder(b"/" + bytes([GET]) + b"/users/3/posts/good", tree, tree_values)
 assert handler_id == 30 and params == [(b"id", b"3")]
-handler_id, params = decoder(b"/\x01/users/me/posts/good", tree, tree_values)
+handler_id, params = decoder(b"/" + bytes([GET]) + b"/users/me/posts/good", tree, tree_values)
 assert handler_id == 30 and params == [(b"id", b"me")]
 print(decoder(b"/" + bytes([POST]) + b"/users/me/posts/good", tree, tree_values)[0])
 assert decoder(b"/" + bytes([POST]) + b"/users/me/posts/good", tree, tree_values)[0] == 30

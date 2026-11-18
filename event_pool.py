@@ -3,20 +3,35 @@ from collections import deque
 import lib.event_pool.session as s
 import lib.parsing.factory as f
 from lib.handling.handler import make_router
+from lib.handling.user_handlers import get,post,put
 
 print("Evnet pool")
+
+ROUTES={}
+
 RESPONSE_OK = memoryview(
     b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
 )
 
-
+@post(ROUTES, b"/index.html")
 def handle_post(request_state, arena_fragment, finished, context):
     if arena_fragment:
         context["body_bytes"] = context.get("body_bytes", 0) + len(arena_fragment)
     if finished:
         return RESPONSE_OK
 
-ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
+#ROUTES = {(f.hp.Methods.POST, b"/index.html"): handle_post}
+@get(ROUTES,b"/user/list")
+def test_get(header_data,  arena, finished, ctx):
+    print(f"Working inside the handler, args are hd {len(header_data)}, arena len {len(arena)}, finished parsing {finished} ctx {len(ctx)}")
+    if "work" in ctx:
+        if ctx["work"] > 10:
+            print("ctx working")
+    else:
+        ctx["work"] = 1
+    return RESPONSE_OK
+
+print(ROUTES)
 resolve_handler = make_router(ROUTES)[0]
 sessions = {}
 

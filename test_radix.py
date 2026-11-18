@@ -1,5 +1,5 @@
 from lib.routning.radix import NONE, TREE_NODE, encoder, SEG_PARAM_TYPE,FIRST_CHILD,NEXT_SIBLING, finalize
-from lib.handling.method_handlers import GET,POST
+GET, POST = 0, 2
 
 
 route_cases = (
